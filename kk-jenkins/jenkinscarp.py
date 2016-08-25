@@ -44,7 +44,6 @@ class Jenkinscarp(BotPlugin):
         
         return "Jenkins job '"+job_name+"' started"
 
-#
 #    @botcmd
 #    def j_running(self, mess, args):
 #        """List all running jobs."""
