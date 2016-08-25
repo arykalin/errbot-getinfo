@@ -53,7 +53,7 @@ class Jenkinscarp(BotPlugin):
 #        jobs = [job for job,inst in self.jenkins.get_jobs() if inst.is_queued_or_running()]
 #                                
 #        return self.format_running_jobs(jobs)
-
+###
 
     def format_jobs(self, jobs):
         if len(jobs) == 0:
