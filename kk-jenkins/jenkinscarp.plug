@@ -1,0 +1,12 @@
+[Core]
+module = jenkinscarp
+name = JenkinsCarp
+
+[Documentation]
+description = Jenkins CI integration for errbot
+
+[Python]
+version = 3
+
+[Errbot]
+
