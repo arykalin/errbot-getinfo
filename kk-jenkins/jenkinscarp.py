@@ -16,7 +16,7 @@ class Jenkinscarp(BotPlugin):
     def j_vers(self, msg, args):
         """A command which simply starts 'versions' Jenkins job"""
         
-        self.send(msg.frm, u"/me is starting 'versions' job in Jenkins... ")
+#        self.send(msg.frm, u"/me is starting 'versions' job in Jenkins... ")
         self.jenkins = Jenkins(JENKINS_URL, JENKINS_USERNAME, JENKINS_PASSWORD)
         self.jenkins.build_job('versions')
         
@@ -25,11 +25,13 @@ class Jenkinscarp(BotPlugin):
     @botcmd
     def j_list(self, mess, args):
         """List all jobs, optionally filter them using a search term."""
-        self.send(mess.frm, u'/me is getting the list of jobs from Jenkins... ')
+#        yield  u'/me is getting the list of jobs from Jenkins... '
+#        self.send(mess.frm, u'/me is getting the list of jobs from Jenkins... ')
                         
         search_term = args.strip().lower()
         self.jenkins = Jenkins(JENKINS_URL, JENKINS_USERNAME, JENKINS_PASSWORD)
-        jobs = [inst for job,inst in self.jenkins.get_jobs() if search_term.lower() in inst.name.lower()]
+        Jjobs = self.jenkins.get_jobs()
+        jobs = [inst for job,inst in Jjobs if search_term.lower() in inst.name.lower()]
                                         
         return self.format_jobs(jobs)
 
@@ -38,11 +40,36 @@ class Jenkinscarp(BotPlugin):
         """A command which starts Jenkins job given as parameter"""
         
         job_name = args.strip()
-        self.send(msg.frm, u"/me is starting job in Jenkins... ")
+#        self.send(msg.frm, u"/me is starting job in Jenkins... ")
         self.jenkins = Jenkins(JENKINS_URL, JENKINS_USERNAME, JENKINS_PASSWORD)
         self.jenkins.build_job(job_name)
         
         return "Jenkins job '"+job_name+"' started"
+
+    @botcmd(admin_only=True)
+    def j_uatver(self, msg, args):
+        """A command which sets UMP_VERSION_UAT global variable value"""
+        
+        uat_ver = args.strip()
+        params = {'V_NAME': 'UMP_VERSION_UAT', 'V_VALUE': uat_ver }
+        
+        self.jenkins = Jenkins(JENKINS_URL, JENKINS_USERNAME, JENKINS_PASSWORD)
+        self.jenkins.build_job('set_global_var',params)
+        
+        return "Jenkins job 'set_global_var' started"
+
+#    @botcmd(admin_only=True)
+    @botcmd
+    def j_deploy_sc(self, msg, args):
+        """A command which starts Jenkins job wich deploys UMP to SC env with version given as parameter"""
+        
+        dp_ver = args.strip()
+        params = {'DEPLOY_VER': dp_ver }
+        
+        self.jenkins = Jenkins(JENKINS_URL, JENKINS_USERNAME, JENKINS_PASSWORD)
+        self.jenkins.build_job('docker_ump_showcase',params)
+        
+        return "Jenkins job 'docker_ump_showcase' started"
 
 #    @botcmd
 #    def j_running(self, mess, args):
