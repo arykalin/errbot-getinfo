@@ -1,3 +1,7 @@
+import json
+import urllib.request
+import random
+
 from errbot import BotPlugin, botcmd, arg_botcmd, webhook
 import jenkinsapi
 from jenkinsapi.jenkins import Jenkins
@@ -35,7 +39,8 @@ class Jenkinscarp(BotPlugin):
                                         
         return self.format_jobs(jobs)
 
-    @botcmd(admin_only=True)
+#    @botcmd(admin_only=True)
+    @botcmd
     def j_run(self, msg, args):
         """A command which starts Jenkins job given as parameter"""
         
@@ -84,6 +89,19 @@ class Jenkinscarp(BotPlugin):
         
         return "Jenkins job 'docker-ump-autotest' started"
 
+    @botcmd
+    def j_steve(self, msg, args):
+        """A command which gets last photo from Stieve's instagram"""
+        
+        
+        with urllib.request.urlopen('https://www.instagram.com/fletcher_whiskeydog/media/') as response:
+            js = response.read()
+            
+        resp = json.loads(js.decode("utf-8"))
+        url  = resp['items'][random.randrange(20)]['images']['standard_resolution']['url']
+
+        return url
+        
 #    @botcmd
 #    def j_running(self, mess, args):
 #        """List all running jobs."""
