@@ -71,6 +71,19 @@ class Jenkinscarp(BotPlugin):
         
         return "Jenkins job 'docker_ump_showcase' started"
 
+#    @botcmd(admin_only=True)
+    @botcmd
+    def j_deploy_at(self, msg, args):
+        """A command which starts Jenkins job wich deploys UMP to Autotest env with version given as parameter"""
+        
+        dp_ver = args.strip()
+        params = {'DEPLOY_VER': dp_ver }
+        
+        self.jenkins = Jenkins(JENKINS_URL, JENKINS_USERNAME, JENKINS_PASSWORD)
+        self.jenkins.build_job('docker-ump-autotest',params)
+        
+        return "Jenkins job 'docker-ump-autotest' started"
+
 #    @botcmd
 #    def j_running(self, mess, args):
 #        """List all running jobs."""
