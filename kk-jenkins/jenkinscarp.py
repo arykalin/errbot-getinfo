@@ -91,8 +91,7 @@ class Jenkinscarp(BotPlugin):
 
     @botcmd
     def j_steve(self, msg, args):
-        """A command which gets last photo from Stieve's instagram"""
-        
+        """A command which gets random image from last 20 photos in Steve's instagram"""
         
         with urllib.request.urlopen('https://www.instagram.com/fletcher_whiskeydog/media/') as response:
             js = response.read()
