@@ -97,7 +97,13 @@ class Jenkinscarp(BotPlugin):
             js = response.read()
             
         resp = json.loads(js.decode("utf-8"))
-        url  = resp['items'][random.randrange(20)]['images']['standard_resolution']['url']
+        
+        picnum = random.randrange(20)
+        
+        if args.strip().lower() == 'last':
+            picnum = 0
+        
+        url  = resp['items'][picnum]['images']['standard_resolution']['url']
 
         return url
         
