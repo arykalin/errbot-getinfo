@@ -1,8 +1,11 @@
 import json
 import urllib.request
 import random
+import socket
+import paramiko
+import re
 
-from errbot import BotPlugin, botcmd, arg_botcmd, webhook
+from errbot import BotPlugin, botcmd, re_botcmd, arg_botcmd, webhook
 import jenkinsapi
 from jenkinsapi.jenkins import Jenkins
 
@@ -90,7 +93,7 @@ class Jenkinscarp(BotPlugin):
         return "Jenkins job 'docker-ump-autotest' started"
 
     @botcmd
-    def j_steve(self, msg, args):
+    def steve(self, msg, args):
         """A command which gets random image from last 20 photos in Steve's instagram"""
         
         with urllib.request.urlopen('https://www.instagram.com/fletcher_whiskeydog/media/') as response:
@@ -106,6 +109,42 @@ class Jenkinscarp(BotPlugin):
         url  = resp['items'][picnum]['images']['standard_resolution']['url']
 
         return url
+        
+    @arg_botcmd('host', type=str)
+    @arg_botcmd('cmdd', type=str)
+    def openam(self, msg, cmdd='',host=''):
+        """Usage: !openam start|stop|restart|status <host>"""
+        hostname = host.strip().lower()
+        if len(hostname) == 0:
+            yield "No host name given. Usage: !portal start|stop|status|restart <hostname>"
+            return
+
+        cmd = cmdd.strip().lower()
+        if cmd not in ['start','stop','status','restart']:
+            yield "Invalid command given. Usage: !openam start|stop|status|restart <hostname>"
+            return
+
+        cmd = "systemctl " + cmd + " openam"
+        yield "Will run '"+cmd+"' on host: "+self.run_cmd(hostname,"uname -n")
+        yield self.run_cmd(hostname,cmd)
+        
+    @arg_botcmd('host', type=str)
+    @arg_botcmd('cmdd', type=str)
+    def portal(self, msg, cmdd='',host=''):
+        """Usage: !portal start|stop|restart|status <host>"""
+        hostname = host.strip().lower()
+        if len(hostname) == 0:
+            yield "No host name given. Usage: !portal start|stop|status|restart <hostname>"
+            return
+
+        cmd = cmdd.strip().lower()
+        if cmd not in ['start','stop','status','restart']:
+            yield "Invalid command given. Usage: !portal start|stop|status|restart <hostname>"
+            return
+
+        cmd = "systemctl " + cmd + " portal"
+        yield "Will run '"+cmd+"' on host: "+self.run_cmd(hostname,"uname -n")
+        yield self.run_cmd(hostname,cmd)
         
 #    @botcmd
 #    def j_running(self, mess, args):
@@ -132,19 +171,15 @@ class Jenkinscarp(BotPlugin):
         return '\n\n'.join(['%s (%s)\n%s' % (job['name'], job['lastBuild']['url'], job['healthReport'][0]['description']) for job in jobs_info]).strip()
 
 
-#    @arg_botcmd('name', type=str)
-#    @arg_botcmd('--favorite-number', type=int, unpack_args=False)
-#    def hello(self, message, args):
-#        """
-#        A command which says hello to someone.
-#
-#        If you include --favorite-number, it will also tell you their
-#        favorite number.
-#        """
-#        if args.favorite_number is None:
-#            return "Hello {name}".format(name=args.name)
-#        else:
-#            return "Hello {name}, I hear your favorite number is {number}".format(
-#                name=args.name,
-#                number=args.favorite_number,
-#            )
+    def run_cmd(self,hostname="dev-test-openam01",cmd="sudo systemctl status openam | grep Active"):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((hostname, 22))
+        t = paramiko.Transport(sock)
+        t.start_client()
+        t.auth_publickey("ansible", paramiko.RSAKey.from_private_key_file("/etc/ansible/ansible.key"))
+        chan = t.open_session()
+        chan.exec_command(cmd)
+        result = chan.recv(255).decode("utf-8")
+        t.close()
+        return result                            
+                                    
