@@ -124,7 +124,7 @@ class Jenkinscarp(BotPlugin):
             yield "Invalid command given. Usage: !openam start|stop|status|restart <hostname>"
             return
 
-        cmd = "systemctl " + cmd + " openam"
+        cmd = "sudo systemctl " + cmd + " openam"
         yield "Will run '"+cmd+"' on host: "+self.run_cmd(hostname,"uname -n")
         yield self.run_cmd(hostname,cmd)
         
@@ -142,7 +142,7 @@ class Jenkinscarp(BotPlugin):
             yield "Invalid command given. Usage: !portal start|stop|status|restart <hostname>"
             return
 
-        cmd = "systemctl " + cmd + " portal"
+        cmd = "sudo systemctl " + cmd + " portal"
         yield "Will run '"+cmd+"' on host: "+self.run_cmd(hostname,"uname -n")
         yield self.run_cmd(hostname,cmd)
         
