@@ -201,7 +201,7 @@ class Jenkinscarp(BotPlugin):
             yield "Invalid command given. Usage: !karaf start|stop|status|restart <hostname>"
             return
 
-        cmd = "systemctl " + cmd + " karaf"
+        cmd = "sudo systemctl " + cmd + " karaf"
         yield "Will run '"+cmd+"' on host: "+self.run_cmd(hostname,"uname -n")
         yield self.run_cmd(hostname,cmd)
 
