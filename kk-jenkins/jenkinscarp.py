@@ -187,6 +187,24 @@ class Jenkinscarp(BotPlugin):
 
         t.close()
 
+    @arg_botcmd('host', type=str)
+    @arg_botcmd('cmdd', type=str)
+    def karaf(self, msg, cmdd='',host=''):
+        """Usage: !karaf start|stop|restart|status <host>"""
+        hostname = host.strip().lower()
+        if len(hostname) == 0:
+            yield "No host name given. Usage: !karaf start|stop|status|restart <hostname>"
+            return
+
+        cmd = cmdd.strip().lower()
+        if cmd not in ['start','stop','status','restart']:
+            yield "Invalid command given. Usage: !karaf start|stop|status|restart <hostname>"
+            return
+
+        cmd = "systemctl " + cmd + " karaf"
+        yield "Will run '"+cmd+"' on host: "+self.run_cmd(hostname,"uname -n")
+        yield self.run_cmd(hostname,cmd)
+
 #    @botcmd
 #    def j_running(self, mess, args):
 #        """List all running jobs."""
