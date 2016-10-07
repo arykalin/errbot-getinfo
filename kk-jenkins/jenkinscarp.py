@@ -88,7 +88,7 @@ class Jenkinscarp(BotPlugin):
         params = {'DEPLOY_VER': dp_ver }
         
         self.jenkins = Jenkins(JENKINS_URL, JENKINS_USERNAME, JENKINS_PASSWORD)
-        self.jenkins.build_job('docker-ump-autotest',params)
+        self.jenkins.build_job('docker-ump-autotest-master',params)
         
         return "Jenkins job 'docker-ump-autotest' started"
 
@@ -110,6 +110,24 @@ class Jenkinscarp(BotPlugin):
 
         return url
         
+#    @botcmd
+#    def kostyak(self, msg, args):
+#        """A command which gets random image from last 20 photos in my instagram"""
+#        
+#        with urllib.request.urlopen('https://www.instagram.com/kot_tulya/media/') as response:
+#            js = response.read()
+#            
+#        resp = json.loads(js.decode("utf-8"))
+#        
+#        picnum = random.randrange(20)
+#        
+#        if args.strip().lower() == 'last':
+#            picnum = 0
+#        
+#        url  = resp['items'][picnum]['images']['standard_resolution']['url']
+#
+#        return url
+        
     @arg_botcmd('host', type=str)
     @arg_botcmd('cmdd', type=str)
     def openam(self, msg, cmdd='',host=''):
@@ -124,7 +142,7 @@ class Jenkinscarp(BotPlugin):
             yield "Invalid command given. Usage: !openam start|stop|status|restart <hostname>"
             return
 
-        cmd = "systemctl " + cmd + " openam"
+        cmd = "sudo systemctl " + cmd + " openam"
         yield "Will run '"+cmd+"' on host: "+self.run_cmd(hostname,"uname -n")
         yield self.run_cmd(hostname,cmd)
         
@@ -142,9 +160,32 @@ class Jenkinscarp(BotPlugin):
             yield "Invalid command given. Usage: !portal start|stop|status|restart <hostname>"
             return
 
-        cmd = "systemctl " + cmd + " portal"
+        cmd = "sudo systemctl " + cmd + " portal"
         yield "Will run '"+cmd+"' on host: "+self.run_cmd(hostname,"uname -n")
         yield self.run_cmd(hostname,cmd)
+        
+    @arg_botcmd('host', type=str)
+    def vers(self, msg, host=''):
+        """Usage: !vers <host>"""
+        hostname = host.strip().lower()
+        if len(hostname) == 0:
+            yield "No host name given. Usage: !vers <hostname>"
+            return
+
+        yield "Check version of microservices running on host: "+self.run_cmd(hostname,"uname -n")
+
+        feats = [ "draas-proxy", "carpathia-sync-service", "ump-commons-feature", "ump-roster-feature"]
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((hostname, 8101))
+        t = paramiko.Transport(sock)
+        t.start_client()
+        t.auth_password("karaf", "karaf")
+
+        for f in feats:
+            yield "{:<25} {}".format(f,self.get_ver(t,f))
+
+        t.close()
 
     @arg_botcmd('host', type=str)
     @arg_botcmd('cmdd', type=str)
@@ -199,5 +240,19 @@ class Jenkinscarp(BotPlugin):
         chan.exec_command(cmd)
         result = chan.recv(255).decode("utf-8")
         t.close()
-        return result                            
-                                    
+        return result
+
+    def get_ver(self,t,feature):
+
+        chan = t.open_session()
+        chan.exec_command("feature:list | grep "+feature)
+        resp = chan.recv(2048).decode("utf-8")
+
+        o_list = resp.split('|',2)
+
+        f_ver = "not installed"
+
+        if len(o_list) > 1:
+            f_ver = o_list[1].strip()
+
+        return f_ver
