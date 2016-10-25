@@ -1,12 +1,13 @@
 import sys
 import paramiko
-import select
-import time
 
 from errbot import BotPlugin, botcmd, re_botcmd, arg_botcmd, webhook
 
 import logging
 logging.basicConfig(stream=sys.stdout, level=logging.CRITICAL)
+
+from config import SSH_KEY
+from config import SSH_USER
 
 class exec_remote(object):
     def __init__(self, hostname, commands):
@@ -14,26 +15,24 @@ class exec_remote(object):
         self.commands = commands
 
     def exec(self):
-        k = paramiko.RSAKey.from_private_key_file("/etc/ansible/ansible.key")
+        k = paramiko.RSAKey.from_private_key_file(SSH_KEY)
         c = paramiko.SSHClient()
         c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         logging.info("connecting")
-        c.connect(self.hostname, username="ansible", pkey=k)
+        c.connect(self.hostname, username=SSH_USER, pkey=k)
         logging.info("Commands are {}".format(self.commands))
         l = []
         for command in self.commands:
             logging.info("Executing {}".format(command))
             stdin, stdout, stderr = c.exec_command(command, get_pty=True)
-            # r = stdout.read()
-            # e = stderr.read()
-            # l.append(r + e)
             for line in stdout:
                 line = line.rstrip()
                 l.append(line)
 
         c.close()
 
-        return ', '.join( repr(e).strip() for e in l)
+        #return ', '.join( repr(e).strip() for e in l)
+        return ', '.join( repr(e) for e in l)
 
 
 #portal_version = exec_remote("dev-test-app01.carpathia.com", ["sudo cat
@@ -104,7 +103,7 @@ class GetInfo(BotPlugin):
         l = []
         for h in range(1, 7):
             host = "dev-test-app0" + str(h) + ".carpathia.com"
-            openam_version = exec_remote(host, ["tail -n 10 /home/tomcat/portal/logs/catalina.out"])
-            l.append("tail catalina.out on %s : %s" % (host, openam_version.exec()))
+            t = exec_remote(host, ["sudo tail -n 10 /home/tomcat/portal/logs/catalina.out"])
+            l.append("tail catalina.out on %s : %s" % (host, t.exec()))
         for s in l:
             yield s
