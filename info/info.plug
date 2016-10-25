@@ -1,0 +1,12 @@
+[Core]
+module = getinfo
+name = GetInfo
+
+[Documentation]
+description = Getting information about environement
+
+[Python]
+version = 3
+
+[Errbot]
+
