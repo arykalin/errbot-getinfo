@@ -24,12 +24,16 @@ class exec_remote(object):
         for command in self.commands:
             logging.info("Executing {}".format(command))
             stdin, stdout, stderr = c.exec_command(command, get_pty=True)
-            r = stdout.read()
-            e = stderr.read()
-            l.append(r + e)
+            # r = stdout.read()
+            # e = stderr.read()
+            # l.append(r + e)
+            for line in stdout:
+                line = line.rstrip()
+                l.append(line)
 
         c.close()
-        return l
+
+        return ', '.join( repr(e).strip() for e in l)
 
 
 #portal_version = exec_remote("dev-test-app01.carpathia.com", ["sudo cat
@@ -40,7 +44,7 @@ class exec_remote(object):
 #     host = "dev-test-app0" + str(i) + ".carpathia.com"
 #     portal_version = exec_remote(host, ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed "
 #                                      "'s/.*=//'"])
-#     print("Portal version on %s : %s" % (host, portal_version.exec()))
+#     print("Portal version on %s : %s" % (host, portal_version.exec()), end='\n')
 #
 # log_tail = exec_remote("dev-test-app01.carpathia.com", ["sudo tail -n 1 /var/log/messages", "sudo uname -a"])
 # print(log_tail.exec())
@@ -57,4 +61,4 @@ class GetInfo(BotPlugin):
             portal_version = exec_remote(host, ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed "
                                              "'s/.*=//'"])
             version_list.append("Portal version on %s : %s" % (host, portal_version.exec()))
-        return version_list
+        yield version_list
