@@ -68,16 +68,16 @@ class Jenkinscarp(BotPlugin):
 
 #    @botcmd(admin_only=True)
     @botcmd
-    def j_deploy_sc(self, msg, args):
-        """A command which starts Jenkins job wich deploys UMP to SC env with version given as parameter"""
+    def j_deploy_cl(self, msg, args):
+        """A command which starts Jenkins job wich deploys UMP to Cluster env with version given as parameter"""
         
         dp_ver = args.strip()
         params = {'DEPLOY_VER': dp_ver }
         
         self.jenkins = Jenkins(JENKINS_URL, JENKINS_USERNAME, JENKINS_PASSWORD)
-        self.jenkins.build_job('docker_ump_showcase',params)
+        self.jenkins.build_job('docker-ump-cluster',params)
         
-        return "Jenkins job 'docker_ump_showcase' started"
+        return "Jenkins job 'docker-ump-cluster' started"
 
 #    @botcmd(admin_only=True)
     @botcmd
