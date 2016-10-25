@@ -2,6 +2,9 @@ import sys
 import paramiko
 import select
 import time
+
+from errbot import BotPlugin, botcmd, re_botcmd, arg_botcmd, webhook
+
 import logging
 logging.basicConfig(stream=sys.stdout, level=logging.CRITICAL)
 
@@ -33,11 +36,25 @@ class exec_remote(object):
 # /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed 's/.*=//'"])
 #print(portal_version.exec())
 #
-for i in range(1, 6):
-    host = "dev-test-app0" + str(i) + ".carpathia.com"
-    portal_version = exec_remote(host, ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed "
-                                     "'s/.*=//'", "sudo uname -a"])
-    print("Portal version on %s : %s" % (host, portal_version.exec()))
+# for i in range(1, 6):
+#     host = "dev-test-app0" + str(i) + ".carpathia.com"
+#     portal_version = exec_remote(host, ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed "
+#                                      "'s/.*=//'"])
+#     print("Portal version on %s : %s" % (host, portal_version.exec()))
 #
 # log_tail = exec_remote("dev-test-app01.carpathia.com", ["sudo tail -n 1 /var/log/messages", "sudo uname -a"])
 # print(log_tail.exec())
+
+class GetInfo(BotPlugin):
+    """Get info about environement"""
+
+    @botcmd
+    def portal_versions(self, msg, args):
+        """Get info about portal versions"""
+        version_list = []
+        for i in range(1, 6):
+            host = "dev-test-app0" + str(i) + ".carpathia.com"
+            portal_version = exec_remote(host, ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed "
+                                             "'s/.*=//'"])
+            version_list.append("Portal version on %s : %s" % (host, portal_version.exec()))
+        return version_list
