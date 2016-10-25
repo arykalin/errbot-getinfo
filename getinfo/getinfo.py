@@ -14,7 +14,7 @@ class exec_remote(object):
         self.commands = commands
 
     def exec(self):
-        k = paramiko.RSAKey.from_private_key_file("ansible.key")
+        k = paramiko.RSAKey.from_private_key_file("/etc/ansible/ansible.key")
         c = paramiko.SSHClient()
         c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         logging.info("connecting")
