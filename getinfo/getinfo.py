@@ -111,14 +111,12 @@ class GetInfo(BotPlugin):
 #    @arg_botcmd('on_host', type=str, default='no')
     def openam_databases(self, msg, match):
         """Get info about portal versions"""
-        m = match.group(4)
-        print("looking for %s" % m)
-        # host = re.match("(.*)(on host)(.*)", m)
-        mm = re.search("(.*)(on host)(.*)", m)
-        host = mm.group(1)
+        host = re.match("(.*)(on )(.*)", match.group(4))
+        if host:
+            host = host.group(3)
         print("host is %s" % host)
         logging.info("match msg %s" % (match))
-        l = [m, host, msg]
+        l = [ host, msg]
         if host:
             # openam_database = exec_remote(host, ["sudo grep jdbc:postgresql /home/openam/forgerock/openam-tomcat/conf/context.xml|tail -n 1|sed 's#.*postgresql://##'"])
             # l.append("OpenAM database used on %s : %s" % (host, openam_database.exec()))
