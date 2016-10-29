@@ -63,7 +63,7 @@ class exec_remote(object):
 class GetInfo(BotPlugin):
     """Get info about environement"""
 
-    @botcmd
+    @re_botcmd(pattern=r"^[Ss]how(.*)portal(.*)version(.*)$")
     def portal_versions(self, msg, args):
         """Get info about portal versions"""
         l = []
@@ -107,3 +107,23 @@ class GetInfo(BotPlugin):
             l.append("tail catalina.out on %s : %s" % (host, t.exec()))
         for s in l:
             yield s
+
+    @re_botcmd(pattern=r"^(([Cc]an|[Mm]ay) I have a )?cookie please\?$")
+    def hand_out_cookies(self, msg, match):
+        """
+        Gives cookies to people who ask me nicely.
+
+        This command works especially nice if you have the following in
+        your `config.py`:
+
+        BOT_ALT_PREFIXES = ('Err',)
+        BOT_ALT_PREFIX_SEPARATORS = (':', ',', ';')
+
+        People are then able to say one of the following:
+
+        Err, can I have a cookie please?
+        Err: May I have a cookie please?
+        Err; cookie please?
+        """
+        yield "Here's a cookie for you, {}".format(msg.frm)
+        yield "/me hands out a cookie."
