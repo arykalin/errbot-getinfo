@@ -108,27 +108,33 @@ class GetInfo(BotPlugin):
             yield s
 
     @re_botcmd(pattern=r"^show(.*)openam(.*)(database|db)(.*)$", flags=re.IGNORECASE)
-#    @arg_botcmd('on_host', type=str, default='no')
     def openam_databases(self, msg, match):
         """Get info about portal versions"""
-        host = re.match("(.*)(on )(.*)", match.group(4))
-        if host:
-            host = host.group(3)
-        print("host is %s" % host)
-        logging.info("match msg %s" % (match))
-        l = [ host, msg]
-        if host:
-            # openam_database = exec_remote(host, ["sudo grep jdbc:postgresql /home/openam/forgerock/openam-tomcat/conf/context.xml|tail -n 1|sed 's#.*postgresql://##'"])
+        l = []
+        hosts_list = ["dev-test-app01.carpathia.com","dev-test-app02.carpathia.com","dev-test-app03.carpathia.com"]
+        commands = ["sudo grep jdbc:postgresql /home/openam/forgerock/openam-tomcat/conf/context.xml|tail -n 1|sed 's#.*postgresql://##'"]
+        # host_frm_msg = None
+        host_frm_msg = re.match("(.*)(\s+on\s+)(.*)", match.group(4))
+        if host_frm_msg:
+            host_frm_msg = host_frm_msg.group(3)
+            # openam_database = exec_remote(host, commands)
             # l.append("OpenAM database used on %s : %s" % (host, openam_database.exec()))
-            l.append('host is %s, working on it' % (host))
-            for s in l:
-                yield s
+            for h in hosts_list:
+                r = r"(.*)(\s+on\s+)({0})".format(h)
+                host_frm_msg = re.match(r, match.group(4))
+                if host_frm_msg:
+                    print("host from list %s found, bingo" % h)
+                    host_frm_msg = host_frm_msg.group(3)
+                    print("host is %s" % host_frm_msg)
+                    l.append('host is %s, working on it' % (host_frm_msg))
+                    for s in l:
+                        yield s
         else:
             # for h in range(1, 7):
             #     host = "dev-test-openam0" + str(h) + ".carpathia.com"
             #     openam_database = exec_remote(host, ["sudo grep jdbc:postgresql /home/openam/forgerock/openam-tomcat/conf/context.xml|tail -n 1|sed 's#.*postgresql://##'"])
             #     l.append("OpenAM database used on %s : %s" % (host, openam_database.exec()))
-            l.append('host is %s, going default' % (host))
+            l.append('host is %s, going default' % (host_frm_msg))
             for s in l:
                 yield s
 
