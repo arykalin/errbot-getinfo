@@ -1,11 +1,11 @@
 import sys
 import paramiko
 import re
+import logging
 
 from errbot import BotPlugin, botcmd, re_botcmd, arg_botcmd, webhook
 
-import logging
-logging.basicConfig(stream=sys.stdout, level=logging.CRITICAL)
+#logging.basicConfig(stream=sys.stdout, level=logging.CRITICAL)
 
 from config import SSH_KEY
 from config import SSH_USER
@@ -68,7 +68,7 @@ class GetInfo(BotPlugin):
         """Get info about portal versions"""
         l = []
         for h in range(1, 7):
-            host = "dev-test-app0" + str(h) + ".carpathia.com"
+            host = "dev-test-openam0" + str(h) + ".carpathia.com"
             portal_version = exec_remote(host, ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed "
                                              "'s/.*=//'"])
             l.append("Portal version on %s : %s" % (host, portal_version.exec()))
@@ -79,7 +79,7 @@ class GetInfo(BotPlugin):
         """Get info about portal versions"""
         l = []
         for h in range(1, 7):
-            host = "dev-test-app0" + str(h) + ".carpathia.com"
+            host = "dev-test-openam0" + str(h) + ".carpathia.com"
             portal_database = exec_remote(host, ["sudo grep ^jdbc.mmdb.url /home/tomcat/portal/webapps/portal/WEB-INF/env.properties|sed 's#.*=.*jdbc:postgresql://##'"])
             l.append("Portal database used on %s : %s" % (host, portal_database.exec()))
         yield '\n'.join(l)
@@ -99,20 +99,20 @@ class GetInfo(BotPlugin):
         """Get info about portal versions"""
         l = []
         host_dict = {'hostname': 'None'}
-        hosts_list = ["dev-test-app01.carpathia.com","dev-test-app02.carpathia.com","dev-test-app03.carpathia.com"]
+        hosts_list = ["dev-test-openam01.carpathia.com","dev-test-openam02.carpathia.com","dev-test-openam03.carpathia.com"]
         commands = ["sudo grep jdbc:postgresql /home/openam/forgerock/openam-tomcat/conf/context.xml|tail -n 1|sed 's#.*postgresql://##'"]
         host_frm_msg = re.match("(.*)(\s+on\s+)(.*)", match.group(4))
         if host_frm_msg:
             host_frm_msg = host_frm_msg.group(3)
-            print("pattern match working with {}".format(host_frm_msg))
+            self.log.debug("pattern match working with {}".format(host_frm_msg))
             for idx, h in enumerate(hosts_list):
                 if host_frm_msg in h:
-                    print("{} match {} in {} updating dict {} to {}".format(host_frm_msg,hosts_list[idx],hosts_list,
+                    self.log.debug("{} match {} in {} updating dict {} to {}".format(host_frm_msg,hosts_list[idx],hosts_list,
                                                                       host_dict,h))
                     host_dict['hostname'] = hosts_list[idx]
-                    print("hostname in dict {} is {}".format(host_dict,host_dict['hostname']))
+                    self.log.debug("hostname in dict {} is {}".format(host_dict,host_dict['hostname']))
                 else:
-                    print("host {} not found in {}".format(host_frm_msg,hosts_list))
+                    self.log.debug("host {} not found in {}".format(host_frm_msg,hosts_list))
             host = host_dict['hostname']
             if host == 'None':
                 l.append("host {} not found in hosts list {}".format(host_frm_msg, hosts_list))
@@ -123,6 +123,7 @@ class GetInfo(BotPlugin):
         else:
             for host in hosts_list:
                 # l.append('host is {}, going default: "OpenAM database used on {} :'.format(host_frm_msg,host))
+                self.log.debug('host is {}, going default, checking database used on {} :'.format(host_frm_msg,host))
                 openam_database = exec_remote(host, commands)
                 l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
         yield '\n'.join(l)
@@ -131,12 +132,12 @@ class GetInfo(BotPlugin):
     def karaf_database(self, msg, args):
         """Get info about portal versions"""
         l = []
-        hosts = ["dev-test-app01.carpathia.com",
-                 "dev-test-app02.carpathia.com",
+        hosts = ["dev-test-openam01.carpathia.com",
+                 "dev-test-openam02.carpathia.com",
                  "dev-test-microserv01.carpathia.com",
                  "dev-test-microserv02.carpathia.com",
-                 "dev-test-app05.carpathia.com",
-                 "dev-test-app06.carpathia.com"]
+                 "dev-test-openam05.carpathia.com",
+                 "dev-test-openam06.carpathia.com"]
         for h in hosts:
             host = h
             karaf_database = exec_remote_karaf(host, ["config:list|grep com.qts.ump.dao.db.name"])
@@ -148,28 +149,8 @@ class GetInfo(BotPlugin):
         """Get info about portal versions"""
         l = []
         for h in range(1, 7):
-            host = "dev-test-app0" + str(h) + ".carpathia.com"
+            host = "dev-test-openam0" + str(h) + ".carpathia.com"
             t = exec_remote(host, ["sudo tail -n 10 /home/tomcat/portal/logs/catalina.out"])
             yield "Getting logs from {}".format(host)
             l.append("tail catalina.out on %s : %s" % (host, t.exec()))
         yield '\n'.join(l)
-
-    @re_botcmd(pattern=r"^(([Cc]an|[Mm]ay) I have a )?cookie please\?$")
-    def hand_out_cookies(self, msg, match):
-        """
-        Gives cookies to people who ask me nicely.
-
-        This command works especially nice if you have the following in
-        your `config.py`:
-
-        BOT_ALT_PREFIXES = ('Err',)
-        BOT_ALT_PREFIX_SEPARATORS = (':', ',', ';')
-
-        People are then able to say one of the following:
-
-        Err, can I have a cookie please?
-        Err: May I have a cookie please?
-        Err; cookie please?
-        """
-        yield "Here's a cookie for you, {}".format(msg.frm)
-        yield "/me hands out a cookie."
