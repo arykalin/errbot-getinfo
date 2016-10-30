@@ -133,12 +133,12 @@ class GetInfo(BotPlugin):
     def karaf_database(self, msg, args):
         """Get info about portal versions"""
         l = []
-        hosts = ["dev-test-openam01.carpathia.com",
-                 "dev-test-openam02.carpathia.com",
+        hosts = ["dev-test-app01.carpathia.com",
+                 "dev-test-app02.carpathia.com",
                  "dev-test-microserv01.carpathia.com",
                  "dev-test-microserv02.carpathia.com",
-                 "dev-test-openam05.carpathia.com",
-                 "dev-test-openam06.carpathia.com"]
+                 "dev-test-app05.carpathia.com",
+                 "dev-test-app06.carpathia.com"]
         for h in hosts:
             host = h
             karaf_database = exec_remote_karaf(host, ["config:list|grep com.qts.ump.dao.db.name"])
