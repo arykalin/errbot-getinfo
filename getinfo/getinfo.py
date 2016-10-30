@@ -111,32 +111,35 @@ class GetInfo(BotPlugin):
     def openam_databases(self, msg, match):
         """Get info about portal versions"""
         l = []
+        host_dict = {'hostname': 'None'}
         hosts_list = ["dev-test-app01.carpathia.com","dev-test-app02.carpathia.com","dev-test-app03.carpathia.com"]
         commands = ["sudo grep jdbc:postgresql /home/openam/forgerock/openam-tomcat/conf/context.xml|tail -n 1|sed 's#.*postgresql://##'"]
-        # host_frm_msg = None
         host_frm_msg = re.match("(.*)(\s+on\s+)(.*)", match.group(4))
         if host_frm_msg:
             host_frm_msg = host_frm_msg.group(3)
-            for h in hosts_list:
-                r = r"(.*)(\s+on\s+)({0})".format(h)
-                host_frm_msg = re.match(r, match.group(4))
-                if host_frm_msg:
-                    print("host {} from host list {} found, bingo".format(h,hosts_list))
-                    host_frm_msg = host_frm_msg.group(3)
-                    print("host is {}".format(host_frm_msg))
-                    l.append('host is {}, working on it'.format(host_frm_msg))
-                    # openam_database = exec_remote(host, commands)
-                    # l.append("OpenAM database used on %s : %s" % (host, openam_database.exec()))
-                    for s in l:
-                        yield s
+            print("pattern match working with {}".format(host_frm_msg))
+            for idx, h in enumerate(hosts_list):
+                if host_frm_msg in h:
+                    print("{} match {} in {} updating dict {} to {}".format(host_frm_msg,hosts_list[idx],hosts_list,
+                                                                      host_dict,h))
+                    host_dict['hostname'] = hosts_list[idx]
+                    print("hostname in dict {} is {}".format(host_dict,host_dict['hostname']))
+                else:
+                    print("host {} not found in {}".format(host_frm_msg,hosts_list))
+            host = host_dict['hostname']
+            if host == 'None':
+                l.append("host {} not found in hosts list {}".format(host_frm_msg, hosts_list))
+            else:
+                # openam_database = exec_remote(host, commands)
+                # l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
+                l.append("working with {}".format(host))
         else:
-            # for h in range(1, 7):
-            #     host = "dev-test-openam0" + str(h) + ".carpathia.com"
-            #     openam_database = exec_remote(host, ["sudo grep jdbc:postgresql /home/openam/forgerock/openam-tomcat/conf/context.xml|tail -n 1|sed 's#.*postgresql://##'"])
-            #     l.append("OpenAM database used on %s : %s" % (host, openam_database.exec()))
-            l.append('host is {}, going default'.format(host_frm_msg))
-            for s in l:
-                yield s
+            for host in hosts_list:
+                # openam_database = exec_remote(host, commands)
+                # l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
+                l.append('host is {}, going default: "OpenAM database used on {} :'.format(host_frm_msg,host))
+        for s in l:
+            yield s
 
     @re_botcmd(pattern=r"^[Ss]how(.*)karaf(.*)(database|db)(.*)$", flags=re.IGNORECASE)
     def karaf_database(self, msg, args):
