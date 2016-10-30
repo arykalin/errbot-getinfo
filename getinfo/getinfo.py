@@ -69,7 +69,7 @@ class GetInfo(BotPlugin):
         """Get info about portal versions"""
         l = []
         for h in range(1, 7):
-            host = "dev-test-openam0" + str(h) + ".carpathia.com"
+            host = "dev-test-app0" + str(h) + ".carpathia.com"
             portal_version = exec_remote(host, ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed "
                                              "'s/.*=//'"])
             l.append("Portal version on %s : %s" % (host, portal_version.exec()))
@@ -80,7 +80,7 @@ class GetInfo(BotPlugin):
         """Get info about portal versions"""
         l = []
         for h in range(1, 7):
-            host = "dev-test-openam0" + str(h) + ".carpathia.com"
+            host = "dev-test-app0" + str(h) + ".carpathia.com"
             portal_database = exec_remote(host, ["sudo grep ^jdbc.mmdb.url /home/tomcat/portal/webapps/portal/WEB-INF/env.properties|sed 's#.*=.*jdbc:postgresql://##'"])
             l.append("Portal database used on %s : %s" % (host, portal_database.exec()))
         yield '\n'.join(l)
@@ -150,7 +150,7 @@ class GetInfo(BotPlugin):
         """Get info about portal versions"""
         l = []
         for h in range(1, 7):
-            host = "dev-test-openam0" + str(h) + ".carpathia.com"
+            host = "dev-test-app0" + str(h) + ".carpathia.com"
             t = exec_remote(host, ["sudo tail -n 10 /home/tomcat/portal/logs/catalina.out"])
             yield "Getting logs from {}".format(host)
             l.append("tail catalina.out on %s : %s" % (host, t.exec()))
