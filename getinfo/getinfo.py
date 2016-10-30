@@ -10,6 +10,7 @@ from errbot import BotPlugin, botcmd, re_botcmd, arg_botcmd, webhook
 from config import SSH_KEY
 from config import SSH_USER
 
+#TODO: Rewrite it to class exec_remote(BotPlugin):
 class exec_remote(object):
     def __init__(self, hostname, commands):
         self.hostname = hostname
