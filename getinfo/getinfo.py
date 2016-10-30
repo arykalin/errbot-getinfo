@@ -60,16 +60,6 @@ class exec_remote_karaf(exec_remote):
         #return ', '.join( repr(e).strip() for e in l)
         return ', '.join( repr(e) for e in l)
 
-
-# for i in range(1, 6):
-#     host = "dev-test-app0" + str(i) + ".carpathia.com"
-#     portal_version = exec_remote(host, ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed "
-#                                      "'s/.*=//'"])
-#     print("Portal version on %s : %s" % (host, portal_version.exec()), end='\n')
-#
-# log_tail = exec_remote("dev-test-app01.carpathia.com", ["sudo tail -n 1 /var/log/messages", "sudo uname -a"])
-# print(log_tail.exec())
-
 class GetInfo(BotPlugin):
     """Get info about environement"""
 
@@ -82,8 +72,7 @@ class GetInfo(BotPlugin):
             portal_version = exec_remote(host, ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed "
                                              "'s/.*=//'"])
             l.append("Portal version on %s : %s" % (host, portal_version.exec()))
-        for s in l:
-            yield s
+        yield '\n'.join(l)
 
     @re_botcmd(pattern=r"^[Ss]how(.*)portal(.*)(database|db)(.*)$", flags=re.IGNORECASE)
     def portal_databases(self, msg, args):
@@ -93,8 +82,7 @@ class GetInfo(BotPlugin):
             host = "dev-test-app0" + str(h) + ".carpathia.com"
             portal_database = exec_remote(host, ["sudo grep ^jdbc.mmdb.url /home/tomcat/portal/webapps/portal/WEB-INF/env.properties|sed 's#.*=.*jdbc:postgresql://##'"])
             l.append("Portal database used on %s : %s" % (host, portal_database.exec()))
-        for s in l:
-            yield s
+        yield '\n'.join(l)
 
     @re_botcmd(pattern=r"^[Ss]how(.*)openam(.*)version(.*)$", flags=re.IGNORECASE)
     def openam_versions(self, msg, args):
@@ -104,8 +92,7 @@ class GetInfo(BotPlugin):
             host = "dev-test-openam0" + str(h) + ".carpathia.com"
             openam_version = exec_remote(host, ["sudo grep  urlArgs.*v ""/home/openam/forgerock/openam-tomcat/webapps/openam/XUI/index.html |sed -e 's/.*=//' -e 's/\".*//'"])
             l.append("OpenAM version on %s : %s" % (host, openam_version.exec()))
-        for s in l:
-            yield s
+        yield '\n'.join(l)
 
     @re_botcmd(pattern=r"^show(.*)openam(.*)(database|db)(.*)$", flags=re.IGNORECASE)
     def openam_databases(self, msg, match):
@@ -130,16 +117,15 @@ class GetInfo(BotPlugin):
             if host == 'None':
                 l.append("host {} not found in hosts list {}".format(host_frm_msg, hosts_list))
             else:
-                # openam_database = exec_remote(host, commands)
-                # l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
-                l.append("working with {}".format(host))
+                # l.append("working with {}".format(host))
+                openam_database = exec_remote(host, commands)
+                l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
         else:
             for host in hosts_list:
-                # openam_database = exec_remote(host, commands)
-                # l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
-                l.append('host is {}, going default: "OpenAM database used on {} :'.format(host_frm_msg,host))
-        for s in l:
-            yield s
+                # l.append('host is {}, going default: "OpenAM database used on {} :'.format(host_frm_msg,host))
+                openam_database = exec_remote(host, commands)
+                l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
+        yield '\n'.join(l)
 
     @re_botcmd(pattern=r"^[Ss]how(.*)karaf(.*)(database|db)(.*)$", flags=re.IGNORECASE)
     def karaf_database(self, msg, args):
@@ -155,8 +141,7 @@ class GetInfo(BotPlugin):
             host = h
             karaf_database = exec_remote_karaf(host, ["config:list|grep com.qts.ump.dao.db.name"])
             l.append("Karaf database property on %s : %s" % (host, karaf_database.exec()))
-        for s in l:
-            yield s
+        yield '\n'.join(l)
 
     @botcmd
     def tail_catalina(self, msg, args):
@@ -165,9 +150,9 @@ class GetInfo(BotPlugin):
         for h in range(1, 7):
             host = "dev-test-app0" + str(h) + ".carpathia.com"
             t = exec_remote(host, ["sudo tail -n 10 /home/tomcat/portal/logs/catalina.out"])
+            yield "Getting logs from {}".format(host)
             l.append("tail catalina.out on %s : %s" % (host, t.exec()))
-        for s in l:
-            yield s
+        yield '\n'.join(l)
 
     @re_botcmd(pattern=r"^(([Cc]an|[Mm]ay) I have a )?cookie please\?$")
     def hand_out_cookies(self, msg, match):
