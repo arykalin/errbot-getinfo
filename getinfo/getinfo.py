@@ -11,21 +11,36 @@ from config import SSH_KEY
 from config import SSH_USER
 
 #TODO: Rewrite it to class exec_remote(BotPlugin):
+# class GoogleCloud(BotPlugin):
+#     def __init__(self, bot):
+#         super().__init__(bot)
+#         self.outdir = None
+#         self.credentials = None
+#         self.storage = None
+#
+#     """This is a common common for Google Cloud plugins."""
+#
+#     def activate(self):
+#         super().activate()
+#         self.outdir = self.bot_config.BOT_DATA_DIR
+#https://github.com/GoogleCloudPlatform/err-stackdriver/blob/master/gcloud.py
+
 class exec_remote(object):
     def __init__(self, hostname, commands):
         self.hostname = hostname
         self.commands = commands
+        self.log = logging.getLogger("errbot.plugins.%s" % self.__class__.__name__)
 
     def exec(self):
         k = paramiko.RSAKey.from_private_key_file(SSH_KEY)
         c = paramiko.SSHClient()
         c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        logging.info("connecting")
+        self.log.debug("connecting")
         c.connect(self.hostname, username=SSH_USER, pkey=k)
-        logging.info("Commands are {}".format(self.commands))
+        self.log.debug("Commands are {}".format(self.commands))
         l = []
         for command in self.commands:
-            logging.info("Executing {}".format(command))
+            self.log.debug("Executing {}".format(command))
             stdin, stdout, stderr = c.exec_command(command, get_pty=True)
             for line in stdout:
                 line = line.rstrip()
@@ -44,13 +59,13 @@ class exec_remote_karaf(exec_remote):
         port = 8101
         c = paramiko.SSHClient()
         c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        logging.info("connecting")
+        self.log.debug("connecting")
         c.connect(self.hostname, username=user, password=password, port=port)
-        logging.info("Commands are {}".format(self.commands))
+        self.log.debug("Commands are {}".format(self.commands))
         l = []
         ansi_escape = re.compile(r'\x1b[^m]*m')
         for command in self.commands:
-            logging.info("Executing {}".format(command))
+            self.log.debug("Executing {}".format(command))
             stdin, stdout, stderr = c.exec_command(command, get_pty=True)
             for line in stdout:
                 line = ansi_escape.sub('', line).rstrip()
@@ -135,8 +150,8 @@ class GetInfo(BotPlugin):
         l = []
         hosts = ["dev-test-app01.carpathia.com",
                  "dev-test-app02.carpathia.com",
-                 "dev-test-microserv01.carpathia.com",
-                 "dev-test-microserv02.carpathia.com",
+                 #"dev-test-microserv01.carpathia.com",
+                 #"dev-test-microserv02.carpathia.com",
                  "dev-test-app05.carpathia.com",
                  "dev-test-app06.carpathia.com"]
         for h in hosts:
