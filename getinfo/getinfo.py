@@ -83,32 +83,31 @@ class ExecMsgParams(object):
         self.host_list = host_list
         self.commands = commands
         self.l = l
-        self.match = match
     def exec(self):
-        self.host_frm_msg = re.match("(.*)(\s+on\s+)(.*)", self.match.group(4))
-        print(self.host_frm_msg)
-        if self.host_frm_msg:
-            self.host_frm_msg = self.host_frm_msg.group(3)
-            self.log.debug("pattern match working with {}".format(self.host_frm_msg))
+        host_frm_msg = re.match("(.*)(\s+on\s+)(.*)", self.match.group(4))
+        print(host_frm_msg)
+        if host_frm_msg:
+            host_frm_msg = host_frm_msg.group(3)
+            self.log.debug("pattern match working with {}".format(host_frm_msg))
             for idx, h in enumerate(self.host_list):
-                if self.host_frm_msg in h:
-                    self.log.debug("{} match {} in {} updating dict {} to {}".format(self.host_frm_msg,self.host_list[idx],self.host_list,
+                if host_frm_msg in h:
+                    self.log.debug("{} match {} in {} updating dict {} to {}".format(host_frm_msg,self.host_list[idx],self.host_list,
                                                                       host_dict,h))
                     host_dict['hostname'] = self.host_list[idx]
                     self.log.debug("hostname in dict {} is {}".format(host_dict,host_dict['hostname']))
                 else:
-                    self.log.debug("host {} not found in {}".format(self.host_frm_msg,self.host_list))
+                    self.log.debug("host {} not found in {}".format(host_frm_msg,self.host_list))
             host = host_dict['hostname']
             if host == 'None':
-                self.l.append("host {} not found in hosts list {}".format(self.host_frm_msg, self.host_list))
+                self.l.append("host {} not found in hosts list {}".format(host_frm_msg, self.host_list))
             else:
                 # l.append("working with {}".format(host))
                 openam_database = exec_remote(host, self.commands)
                 self.l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
         else:
             for host in self.host_list:
-                # l.append('host is {}, going default: "OpenAM database used on {} :'.format(self.host_frm_msg,host))
-                self.log.debug('host is {}, going default, checking database used on {} :'.format(self.host_frm_msg,host))
+                # l.append('host is {}, going default: "OpenAM database used on {} :'.format(host_frm_msg,host))
+                self.log.debug('host is {}, going default, checking database used on {} :'.format(host_frm_msg,host))
                 openam_database = exec_remote(host, self.commands)
                 self.l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
         l = self.l
