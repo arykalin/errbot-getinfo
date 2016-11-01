@@ -143,7 +143,8 @@ class GetInfo(BotPlugin):
         host_list = KARAF_LIST
         commands = ["config:list|grep com.qts.ump.dao.db.name"]
         host_type = 'karaf'
-        yield ExecMsgParams(host_list, commands, match, host_type).exec()
+        d = ExecMsgParams(host_list, commands, match, host_type).exec()
+        for key, value in d.items():yield('Host {} use database {}'.format(key, value))
 
     @botcmd
     def tail_catalina(self, msg, args):
