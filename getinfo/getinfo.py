@@ -10,6 +10,7 @@ from errbot import BotPlugin, botcmd, re_botcmd, arg_botcmd, webhook
 from config import SSH_KEY
 from config import SSH_USER
 host_dict = {'hostname': 'None'}
+
 #TODO: Rewrite it to class exec_remote(BotPlugin):
 # class GoogleCloud(BotPlugin):
 #     def __init__(self, bot):
@@ -83,7 +84,8 @@ class ExecMsgParams(object):
         self.host_list = host_list
         self.commands = commands
     def exec(self):
-        l = []
+        # l = []
+        msg_dict = {}
         host_frm_msg = re.match("(.*)(\s+on\s+)(.*)", self.match.group(4))
         if host_frm_msg:
             host_frm_msg = host_frm_msg.group(3)
@@ -98,18 +100,23 @@ class ExecMsgParams(object):
                     self.log.debug("host {} not found in {}".format(host_frm_msg,self.host_list))
             host = host_dict['hostname']
             if host == 'None':
-                l.append("host {} not found in hosts list {}".format(host_frm_msg, self.host_list))
+                # l.append("host {} not found in hosts list {}".format(host_frm_msg, self.host_list))
+                msg_dict[host] = "host {} not found in hosts list {}".format(host_frm_msg, self.host_list)
             else:
                 # l.append("working with {}".format(host))
-                openam_database = exec_remote(host, self.commands)
-                l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
+                # openam_database = exec_remote(host, self.commands)
+                # l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
+                m = exec_remote(host, self.commands)
+                msg_dict[host] = m.exec()
         else:
             for host in self.host_list:
                 # l.append('host is {}, going default: "OpenAM database used on {} :'.format(host_frm_msg,host))
                 self.log.debug('host is {}, going default, checking database used on {} :'.format(host_frm_msg,host))
-                openam_database = exec_remote(host, self.commands)
-                l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
-        return l
+                # openam_database = exec_remote(host, self.commands)
+                # l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
+                m = exec_remote(host, self.commands)
+                msg_dict[host] = m.exec()
+        return msg_dict
 
 class GetInfo(BotPlugin):
     """Get info about environement"""
@@ -135,19 +142,16 @@ class GetInfo(BotPlugin):
             l.append("Portal database used on %s : %s" % (host, portal_database.exec()))
         yield '\n'.join(l)
 
-    @re_botcmd(pattern=r"^[Ss]how(.*)openam(.*)version(.*)$", flags=re.IGNORECASE)
-    def openam_versions(self, msg, args):
-        """Get info about portal versions"""
-        l = []
-        for h in range(1, 7):
-            host = "dev-test-openam0" + str(h) + ".carpathia.com"
-            openam_version = exec_remote(host, ["sudo grep  urlArgs.*v ""/home/openam/forgerock/openam-tomcat/webapps/openam/XUI/index.html |sed -e 's/.*=//' -e 's/\".*//'"])
-            l.append("OpenAM version on %s : %s" % (host, openam_version.exec()))
-        yield '\n'.join(l)
+    @re_botcmd(pattern=r"^show(.*)openam(.*)(version|vers)(.*)$", flags=re.IGNORECASE)
+    def openam_versions(self, msg, match):
+        """Get info about openam versions"""
+        host_list = ["dev-test-openam01.carpathia.com","dev-test-openam02.carpathia.com","dev-test-openam03.carpathia.com"]
+        commands = ["sudo grep  urlArgs.*v ""/home/openam/forgerock/openam-tomcat/webapps/openam/XUI/index.html |sed -e 's/.*=//' -e 's/\".*//'"]
+        yield ExecMsgParams(host_list, commands, match).exec()
 
     @re_botcmd(pattern=r"^show(.*)openam(.*)(database|db)(.*)$", flags=re.IGNORECASE)
     def openam_databases(self, msg, match):
-        """Get info about portal versions"""
+        """Get info about openam databases"""
         host_list = ["dev-test-openam01.carpathia.com","dev-test-openam02.carpathia.com","dev-test-openam03.carpathia.com"]
         commands = ["sudo grep jdbc:postgresql /home/openam/forgerock/openam-tomcat/conf/context.xml|tail -n 1|sed 's#.*postgresql://##'"]
         yield '\n'.join(ExecMsgParams(host_list, commands, match).exec())
