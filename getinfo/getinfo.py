@@ -11,21 +11,6 @@ from config import SSH_KEY
 from config import SSH_USER
 host_dict = {'hostname': 'None'}
 
-#TODO: Rewrite it to class exec_remote(BotPlugin):
-# class GoogleCloud(BotPlugin):
-#     def __init__(self, bot):
-#         super().__init__(bot)
-#         self.outdir = None
-#         self.credentials = None
-#         self.storage = None
-#
-#     """This is a common common for Google Cloud plugins."""
-#
-#     def activate(self):
-#         super().activate()
-#         self.outdir = self.bot_config.BOT_DATA_DIR
-#https://github.com/GoogleCloudPlatform/err-stackdriver/blob/master/gcloud.py
-
 class exec_remote(object):
     def __init__(self, hostname, commands):
         self.hostname = hostname
@@ -84,7 +69,6 @@ class ExecMsgParams(object):
         self.host_list = host_list
         self.commands = commands
     def exec(self):
-        # l = []
         msg_dict = {}
         host_frm_msg = re.match("(.*)(\s+on\s+)(.*)", self.match.group(4))
         if host_frm_msg:
@@ -100,20 +84,14 @@ class ExecMsgParams(object):
                     self.log.debug("host {} not found in {}".format(host_frm_msg,self.host_list))
             host = host_dict['hostname']
             if host == 'None':
-                # l.append("host {} not found in hosts list {}".format(host_frm_msg, self.host_list))
                 msg_dict[host] = "host {} not found in hosts list {}".format(host_frm_msg, self.host_list)
             else:
-                # l.append("working with {}".format(host))
-                # openam_database = exec_remote(host, self.commands)
-                # l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
+
                 m = exec_remote(host, self.commands)
                 msg_dict[host] = m.exec()
         else:
             for host in self.host_list:
-                # l.append('host is {}, going default: "OpenAM database used on {} :'.format(host_frm_msg,host))
                 self.log.debug('host is {}, going default, checking database used on {} :'.format(host_frm_msg,host))
-                # openam_database = exec_remote(host, self.commands)
-                # l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
                 m = exec_remote(host, self.commands)
                 msg_dict[host] = m.exec()
         return msg_dict
