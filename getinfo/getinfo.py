@@ -109,47 +109,47 @@ class ExecMsgParams(object):
 class GetInfo(BotPlugin):
     """Get info about environement"""
 
-    @re_botcmd(pattern=r"^[Ss]how(.*)portal(.*)(version|vers)(.*)$")
+    @re_botcmd(pattern=r"^show(.*)portal(.*)(version|vers)(.*)$")
     def portal_versions(self, msg, match):
-        """Get info about portal versions"""
+        """Get info about portal version"""
         host_list = PORTAL_LIST
         commands = ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed 's/.*=//'"]
         yield ExecMsgParams(host_list, commands, match).exec()
 
-    @re_botcmd(pattern=r"^[Ss]how(.*)portal(.*)(database|db)(.*)$", flags=re.IGNORECASE)
+    @re_botcmd(pattern=r"^show(.*)portal(.*)(database|db)(.*)$", flags=re.IGNORECASE)
     def portal_databases(self, msg, match):
-        """Get info about portal versions"""
+        """Get info about portal database"""
         host_list = PORTAL_LIST
         commands = ["sudo grep ^jdbc.mmdb.url /home/tomcat/portal/webapps/portal/WEB-INF/env.properties|sed 's#.*=.*jdbc:postgresql://##'"]
         yield ExecMsgParams(host_list, commands, match).exec()
 
     @re_botcmd(pattern=r"^show(.*)openam(.*)(version|vers)(.*)$", flags=re.IGNORECASE)
     def openam_versions(self, msg, match):
-        """Get info about openam versions"""
+        """Get info about openam version"""
         host_list = OPENAM_LIST
         commands = ["sudo grep  urlArgs.*v ""/home/openam/forgerock/openam-tomcat/webapps/openam/XUI/index.html |sed -e 's/.*=//' -e 's/\".*//'"]
         yield ExecMsgParams(host_list, commands, match).exec()
 
     @re_botcmd(pattern=r"^show(.*)openam(.*)(database|db)(.*)$", flags=re.IGNORECASE)
     def openam_databases(self, msg, match):
-        """Get info about openam databases"""
+        """Get info about openam database"""
         host_list = OPENAM_LIST
         commands = ["sudo grep jdbc:postgresql /home/openam/forgerock/openam-tomcat/conf/context.xml|tail -n 1|sed 's#.*postgresql://##'"]
         d = ExecMsgParams(host_list, commands, match).exec()
         for key, value in d.items():yield('OpenAM on {} use database {}'.format(key, value))
 
-    @re_botcmd(pattern=r"^[Ss]how(.*)karaf(.*)(database|db)(.*)$", flags=re.IGNORECASE)
+    @re_botcmd(pattern=r"^show(.*)karaf(.*)(database|db)(.*)$", flags=re.IGNORECASE)
     def karaf_database(self, msg, match):
-        """Get info about karaf configured database"""
+        """Get info about karaf database"""
         host_list = KARAF_LIST
         commands = ["config:list|grep com.qts.ump.dao.db.name"]
         host_type = 'karaf'
         d = ExecMsgParams(host_list, commands, match, host_type).exec()
         for key, value in d.items():yield('UMP on {} use database {}'.format(key, value))
 
-    @re_botcmd(pattern=r"^[Ss]how(.*)karaf(.*)(features|ftrs)(.*)$", flags=re.IGNORECASE)
+    @re_botcmd(pattern=r"^show(.*)karaf(.*)(features|ftrs)(.*)$", flags=re.IGNORECASE)
     def karaf_features(self, msg, match):
-        """Get info about karaf configured features"""
+        """Get info about karaf features versions"""
         host_list = KARAF_LIST
         commands = ["feature:info draas-proxy |head -n 1",
                     "feature:info carpathia-sync-service |head -n 1",
