@@ -63,13 +63,15 @@ class exec_remote_karaf(exec_remote):
         return ', '.join( repr(e) for e in l)
 
 class ExecMsgParams(object):
-    def __init__(self, host_list, commands, match):
+    def __init__(self, host_list, commands, match, host_type='default'):
         self.log = logging.getLogger("errbot.plugins.%s" % self.__class__.__name__)
         self.match = match
         self.host_list = host_list
         self.commands = commands
+        self.host_type = host_type
     def exec(self):
         msg_dict = {}
+        msg_dict.clear()
         host_frm_msg = re.match("(.*)(\s+on\s+)(.*)", self.match.group(4))
         if host_frm_msg:
             host_frm_msg = host_frm_msg.group(3)
@@ -86,13 +88,18 @@ class ExecMsgParams(object):
             if host == 'None':
                 msg_dict[host] = "host {} not found in hosts list {}".format(host_frm_msg, self.host_list)
             else:
-
-                m = exec_remote(host, self.commands)
+                if self.host_type == 'karaf':
+                    m = exec_remote_karaf(host, self.commands)
+                else:
+                    m = exec_remote(host, self.commands)
                 msg_dict[host] = m.exec()
         else:
             for host in self.host_list:
                 self.log.debug('host is {}, going default, checking database used on {} :'.format(host_frm_msg,host))
-                m = exec_remote(host, self.commands)
+                if self.host_type == 'karaf':
+                    m = exec_remote_karaf(host, self.commands)
+                else:
+                    m = exec_remote(host, self.commands)
                 msg_dict[host] = m.exec()
         return msg_dict
 
@@ -132,23 +139,20 @@ class GetInfo(BotPlugin):
         """Get info about openam databases"""
         host_list = ["dev-test-openam01.carpathia.com","dev-test-openam02.carpathia.com","dev-test-openam03.carpathia.com"]
         commands = ["sudo grep jdbc:postgresql /home/openam/forgerock/openam-tomcat/conf/context.xml|tail -n 1|sed 's#.*postgresql://##'"]
-        yield '\n'.join(ExecMsgParams(host_list, commands, match).exec())
+        yield ExecMsgParams(host_list, commands, match).exec()
 
     @re_botcmd(pattern=r"^[Ss]how(.*)karaf(.*)(database|db)(.*)$", flags=re.IGNORECASE)
-    def karaf_database(self, msg, args):
-        """Get info about portal versions"""
-        l = []
-        hosts = ["dev-test-app01.carpathia.com",
+    def karaf_database(self, msg, match):
+        """Get info about karaf versions"""
+        host_list = ["dev-test-app01.carpathia.com",
                  "dev-test-app02.carpathia.com",
                  #"dev-test-microserv01.carpathia.com",
                  #"dev-test-microserv02.carpathia.com",
                  "dev-test-app05.carpathia.com",
                  "dev-test-app06.carpathia.com"]
-        for h in hosts:
-            host = h
-            karaf_database = exec_remote_karaf(host, ["config:list|grep com.qts.ump.dao.db.name"])
-            l.append("Karaf database property on %s : %s" % (host, karaf_database.exec()))
-        yield '\n'.join(l)
+        commands = ["config:list|grep com.qts.ump.dao.db.name"]
+        host_type = 'karaf'
+        yield ExecMsgParams(host_list, commands, match, host_type).exec()
 
     @botcmd
     def tail_catalina(self, msg, args):
