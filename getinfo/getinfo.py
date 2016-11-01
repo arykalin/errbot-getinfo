@@ -135,23 +135,41 @@ class GetInfo(BotPlugin):
         """Get info about openam databases"""
         host_list = OPENAM_LIST
         commands = ["sudo grep jdbc:postgresql /home/openam/forgerock/openam-tomcat/conf/context.xml|tail -n 1|sed 's#.*postgresql://##'"]
-        yield ExecMsgParams(host_list, commands, match).exec()
+        d = ExecMsgParams(host_list, commands, match).exec()
+        for key, value in d.items():yield('OpenAM on {} use database {}'.format(key, value))
 
     @re_botcmd(pattern=r"^[Ss]how(.*)karaf(.*)(database|db)(.*)$", flags=re.IGNORECASE)
     def karaf_database(self, msg, match):
-        """Get info about karaf versions"""
+        """Get info about karaf configured database"""
         host_list = KARAF_LIST
         commands = ["config:list|grep com.qts.ump.dao.db.name"]
         host_type = 'karaf'
         d = ExecMsgParams(host_list, commands, match, host_type).exec()
-        for key, value in d.items():yield('Host {} use database {}'.format(key, value))
+        for key, value in d.items():yield('UMP on {} use database {}'.format(key, value))
+
+    @re_botcmd(pattern=r"^[Ss]how(.*)karaf(.*)(features|ftrs)(.*)$", flags=re.IGNORECASE)
+    def karaf_features(self, msg, match):
+        """Get info about karaf configured features"""
+        host_list = KARAF_LIST
+        commands = ["feature:info draas-proxy |head -n 1",
+                    "feature:info carpathia-sync-service |head -n 1",
+                    "feature:info ump-commons-feature |head -n 1",
+                    "feature:info ump-roster-feature |head -n 1",]
+        host_type = 'karaf'
+        d = ExecMsgParams(host_list, commands, match, host_type).exec()
+        for key, value in d.items():
+            yield('Karaf on {} have features:'.format(key))
+            v = str(value).split(',')
+            for f in v:
+                yield(f)
+
+
 
     @botcmd
     def tail_catalina(self, msg, args):
         """Get info about portal versions"""
         l = []
-        for h in range(1, 7):
-            host = "dev-test-app0" + str(h) + ".carpathia.com"
+        for host in PORTAL_LIST:
             t = exec_remote(host, ["sudo tail -n 10 /home/tomcat/portal/logs/catalina.out"])
             yield "Getting logs from {}".format(host)
             l.append("tail catalina.out on %s : %s" % (host, t.exec()))
