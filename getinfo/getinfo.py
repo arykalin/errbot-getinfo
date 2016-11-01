@@ -9,7 +9,7 @@ from errbot import BotPlugin, botcmd, re_botcmd, arg_botcmd, webhook
 
 from config import SSH_KEY
 from config import SSH_USER
-
+host_dict = {'hostname': 'None'}
 #TODO: Rewrite it to class exec_remote(BotPlugin):
 # class GoogleCloud(BotPlugin):
 #     def __init__(self, bot):
@@ -76,6 +76,44 @@ class exec_remote_karaf(exec_remote):
         #return ', '.join( repr(e).strip() for e in l)
         return ', '.join( repr(e) for e in l)
 
+class ExecMsgParams(object):
+    def __init__(self, host_list, commands, l, match):
+        self.log = logging.getLogger("errbot.plugins.%s" % self.__class__.__name__)
+        self.match = match
+        self.host_list = host_list
+        self.commands = commands
+        self.l = l
+        self.match = match
+    def exec(self):
+        self.host_frm_msg = re.match("(.*)(\s+on\s+)(.*)", self.match.group(4))
+        print(self.host_frm_msg)
+        if self.host_frm_msg:
+            self.host_frm_msg = self.host_frm_msg.group(3)
+            self.log.debug("pattern match working with {}".format(self.host_frm_msg))
+            for idx, h in enumerate(self.host_list):
+                if self.host_frm_msg in h:
+                    self.log.debug("{} match {} in {} updating dict {} to {}".format(self.host_frm_msg,self.host_list[idx],self.host_list,
+                                                                      host_dict,h))
+                    host_dict['hostname'] = self.host_list[idx]
+                    self.log.debug("hostname in dict {} is {}".format(host_dict,host_dict['hostname']))
+                else:
+                    self.log.debug("host {} not found in {}".format(self.host_frm_msg,self.host_list))
+            host = host_dict['hostname']
+            if host == 'None':
+                self.l.append("host {} not found in hosts list {}".format(self.host_frm_msg, self.host_list))
+            else:
+                # l.append("working with {}".format(host))
+                openam_database = exec_remote(host, self.commands)
+                self.l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
+        else:
+            for host in self.host_list:
+                # l.append('host is {}, going default: "OpenAM database used on {} :'.format(self.host_frm_msg,host))
+                self.log.debug('host is {}, going default, checking database used on {} :'.format(self.host_frm_msg,host))
+                openam_database = exec_remote(host, self.commands)
+                self.l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
+        l = self.l
+        return l
+
 class GetInfo(BotPlugin):
     """Get info about environement"""
 
@@ -114,35 +152,12 @@ class GetInfo(BotPlugin):
     def openam_databases(self, msg, match):
         """Get info about portal versions"""
         l = []
-        host_dict = {'hostname': 'None'}
-        hosts_list = ["dev-test-openam01.carpathia.com","dev-test-openam02.carpathia.com","dev-test-openam03.carpathia.com"]
+        host_list = ["dev-test-openam01.carpathia.com","dev-test-openam02.carpathia.com","dev-test-openam03.carpathia.com"]
         commands = ["sudo grep jdbc:postgresql /home/openam/forgerock/openam-tomcat/conf/context.xml|tail -n 1|sed 's#.*postgresql://##'"]
-        host_frm_msg = re.match("(.*)(\s+on\s+)(.*)", match.group(4))
-        if host_frm_msg:
-            host_frm_msg = host_frm_msg.group(3)
-            self.log.debug("pattern match working with {}".format(host_frm_msg))
-            for idx, h in enumerate(hosts_list):
-                if host_frm_msg in h:
-                    self.log.debug("{} match {} in {} updating dict {} to {}".format(host_frm_msg,hosts_list[idx],hosts_list,
-                                                                      host_dict,h))
-                    host_dict['hostname'] = hosts_list[idx]
-                    self.log.debug("hostname in dict {} is {}".format(host_dict,host_dict['hostname']))
-                else:
-                    self.log.debug("host {} not found in {}".format(host_frm_msg,hosts_list))
-            host = host_dict['hostname']
-            if host == 'None':
-                l.append("host {} not found in hosts list {}".format(host_frm_msg, hosts_list))
-            else:
-                # l.append("working with {}".format(host))
-                openam_database = exec_remote(host, commands)
-                l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
-        else:
-            for host in hosts_list:
-                # l.append('host is {}, going default: "OpenAM database used on {} :'.format(host_frm_msg,host))
-                self.log.debug('host is {}, going default, checking database used on {} :'.format(host_frm_msg,host))
-                openam_database = exec_remote(host, commands)
-                l.append("OpenAM database used on {} : {}".format(host, openam_database.exec()))
-        yield '\n'.join(l)
+        print("showing openam db")
+        excmsg = ExecMsgParams(host_list, commands, l, match)
+        print(excmsg.exec())
+        yield excmsg.exec()
 
     @re_botcmd(pattern=r"^[Ss]how(.*)karaf(.*)(database|db)(.*)$", flags=re.IGNORECASE)
     def karaf_database(self, msg, args):
