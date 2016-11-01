@@ -9,7 +9,9 @@ from errbot import BotPlugin, botcmd, re_botcmd, arg_botcmd, webhook
 
 from config import SSH_KEY
 from config import SSH_USER
-host_dict = {'hostname': 'None'}
+from config import KARAF_LIST
+from config import PORTAL_LIST
+from config import OPENAM_LIST
 
 class exec_remote(object):
     def __init__(self, hostname, commands):
@@ -72,6 +74,7 @@ class ExecMsgParams(object):
     def exec(self):
         msg_dict = {}
         msg_dict.clear()
+        host_dict = {'hostname': 'None'}
         host_frm_msg = re.match("(.*)(\s+on\s+)(.*)", self.match.group(4))
         if host_frm_msg:
             host_frm_msg = host_frm_msg.group(3)
@@ -106,50 +109,38 @@ class ExecMsgParams(object):
 class GetInfo(BotPlugin):
     """Get info about environement"""
 
-    @re_botcmd(pattern=r"^[Ss]how(.*)portal(.*)version(.*)$")
-    def portal_versions(self, msg, args):
+    @re_botcmd(pattern=r"^[Ss]how(.*)portal(.*)(version|vers)(.*)$")
+    def portal_versions(self, msg, match):
         """Get info about portal versions"""
-        l = []
-        for h in range(1, 7):
-            host = "dev-test-app0" + str(h) + ".carpathia.com"
-            portal_version = exec_remote(host, ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed "
-                                             "'s/.*=//'"])
-            l.append("Portal version on %s : %s" % (host, portal_version.exec()))
-        yield '\n'.join(l)
+        host_list = PORTAL_LIST
+        commands = ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed 's/.*=//'"]
+        yield ExecMsgParams(host_list, commands, match).exec()
 
     @re_botcmd(pattern=r"^[Ss]how(.*)portal(.*)(database|db)(.*)$", flags=re.IGNORECASE)
-    def portal_databases(self, msg, args):
+    def portal_databases(self, msg, match):
         """Get info about portal versions"""
-        l = []
-        for h in range(1, 7):
-            host = "dev-test-app0" + str(h) + ".carpathia.com"
-            portal_database = exec_remote(host, ["sudo grep ^jdbc.mmdb.url /home/tomcat/portal/webapps/portal/WEB-INF/env.properties|sed 's#.*=.*jdbc:postgresql://##'"])
-            l.append("Portal database used on %s : %s" % (host, portal_database.exec()))
-        yield '\n'.join(l)
+        host_list = PORTAL_LIST
+        commands = ["sudo grep ^jdbc.mmdb.url /home/tomcat/portal/webapps/portal/WEB-INF/env.properties|sed 's#.*=.*jdbc:postgresql://##'"]
+        yield ExecMsgParams(host_list, commands, match).exec()
 
     @re_botcmd(pattern=r"^show(.*)openam(.*)(version|vers)(.*)$", flags=re.IGNORECASE)
     def openam_versions(self, msg, match):
         """Get info about openam versions"""
-        host_list = ["dev-test-openam01.carpathia.com","dev-test-openam02.carpathia.com","dev-test-openam03.carpathia.com"]
+        host_list = OPENAM_LIST
         commands = ["sudo grep  urlArgs.*v ""/home/openam/forgerock/openam-tomcat/webapps/openam/XUI/index.html |sed -e 's/.*=//' -e 's/\".*//'"]
         yield ExecMsgParams(host_list, commands, match).exec()
 
     @re_botcmd(pattern=r"^show(.*)openam(.*)(database|db)(.*)$", flags=re.IGNORECASE)
     def openam_databases(self, msg, match):
         """Get info about openam databases"""
-        host_list = ["dev-test-openam01.carpathia.com","dev-test-openam02.carpathia.com","dev-test-openam03.carpathia.com"]
+        host_list = OPENAM_LIST
         commands = ["sudo grep jdbc:postgresql /home/openam/forgerock/openam-tomcat/conf/context.xml|tail -n 1|sed 's#.*postgresql://##'"]
         yield ExecMsgParams(host_list, commands, match).exec()
 
     @re_botcmd(pattern=r"^[Ss]how(.*)karaf(.*)(database|db)(.*)$", flags=re.IGNORECASE)
     def karaf_database(self, msg, match):
         """Get info about karaf versions"""
-        host_list = ["dev-test-app01.carpathia.com",
-                 "dev-test-app02.carpathia.com",
-                 #"dev-test-microserv01.carpathia.com",
-                 #"dev-test-microserv02.carpathia.com",
-                 "dev-test-app05.carpathia.com",
-                 "dev-test-app06.carpathia.com"]
+        host_list = KARAF_LIST
         commands = ["config:list|grep com.qts.ump.dao.db.name"]
         host_type = 'karaf'
         yield ExecMsgParams(host_list, commands, match, host_type).exec()
