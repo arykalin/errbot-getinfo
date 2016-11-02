@@ -1,11 +1,8 @@
-import sys
 import paramiko
 import re
 import logging
 
 from errbot import BotPlugin, botcmd, re_botcmd, arg_botcmd, webhook
-
-#logging.basicConfig(stream=sys.stdout, level=logging.CRITICAL)
 
 from config import SSH_KEY
 from config import SSH_USER
@@ -68,7 +65,7 @@ class ExecMsgParams(object):
     def __init__(self, host_list, commands, match, host_type='default'):
         self.log = logging.getLogger("errbot.plugins.%s" % self.__class__.__name__)
         self.match = match
-        self.host_list = host_list
+        self.host_list = sorted(host_list)
         self.commands = commands
         self.host_type = host_type
     def exec(self):
@@ -114,21 +111,24 @@ class GetInfo(BotPlugin):
         """Get info about portal version"""
         host_list = PORTAL_LIST
         commands = ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed 's/.*=//'"]
-        yield ExecMsgParams(host_list, commands, match).exec()
+        d = ExecMsgParams(host_list, commands, match).exec()
+        for key, value in d.items():yield('Portal on {} have version {}'.format(key, value))
 
     @re_botcmd(pattern=r"^show(.*)portal(.*)(database|db)(.*)$", flags=re.IGNORECASE)
     def portal_databases(self, msg, match):
         """Get info about portal database"""
         host_list = PORTAL_LIST
         commands = ["sudo grep ^jdbc.mmdb.url /home/tomcat/portal/webapps/portal/WEB-INF/env.properties|sed 's#.*=.*jdbc:postgresql://##'"]
-        yield ExecMsgParams(host_list, commands, match).exec()
+        d = ExecMsgParams(host_list, commands, match).exec()
+        for key, value in d.items():yield('Portal on {} use database {}'.format(key, value))
 
     @re_botcmd(pattern=r"^show(.*)openam(.*)(version|vers)(.*)$", flags=re.IGNORECASE)
     def openam_versions(self, msg, match):
         """Get info about openam version"""
         host_list = OPENAM_LIST
         commands = ["sudo grep  urlArgs.*v ""/home/openam/forgerock/openam-tomcat/webapps/openam/XUI/index.html |sed -e 's/.*=//' -e 's/\".*//'"]
-        yield ExecMsgParams(host_list, commands, match).exec()
+        d = ExecMsgParams(host_list, commands, match).exec()
+        for key, value in d.items():yield('OpenAM on {} have version {}'.format(key, value))
 
     @re_botcmd(pattern=r"^show(.*)openam(.*)(database|db)(.*)$", flags=re.IGNORECASE)
     def openam_databases(self, msg, match):
@@ -146,6 +146,32 @@ class GetInfo(BotPlugin):
         host_type = 'karaf'
         d = ExecMsgParams(host_list, commands, match, host_type).exec()
         for key, value in d.items():yield('UMP on {} use database {}'.format(key, value))
+
+    @re_botcmd(pattern=r"^(stop|start|restart)(.*)(openam|portal|ump)(.*)$", flags=re.IGNORECASE)
+    def service_restart(self, msg, match):
+        """Get info about karaf database"""
+        host_list = set().union(PORTAL_LIST, KARAF_LIST, OPENAM_LIST)
+        commands = []
+        e = match.group(1)
+        s = match.group(3)
+        cmd = 'sudo systemctl {} {}'.format(e,s)
+        commands.append(cmd)
+        # host_frm_msg = re.match("(.*)(\s+on\s+)(.*)", match.group(4))
+        # print('will run {} on {}'.format(commands, host_frm_msg))
+        print(match.group(4))
+        if "on" in match.group(4):
+           d = ExecMsgParams(host_list, commands, match).exec()
+           for key, value in d.items():yield('Executed {} on {} with result {}'.format(commands, key, value))
+        else:
+            yield 'Run {} on {}??? Noooo. Testers will kill me.'.format(commands, sorted(host_list))
+
+    @re_botcmd(pattern=r"(.*)(damn|fuck|stupid)(.*)$", flags=re.IGNORECASE)
+    def be_nice(self, msg, match):
+        yield "Could you be more nice (((?"
+
+    @re_botcmd(pattern=r"(.*)(please)(.*)$", flags=re.IGNORECASE)
+    def gracefull(self, msg, match):
+        yield "Of course, here you are:"
 
     @re_botcmd(pattern=r"^show(.*)karaf(.*)(features|ftrs)(.*)$", flags=re.IGNORECASE)
     def karaf_features(self, msg, match):
