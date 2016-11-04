@@ -71,7 +71,7 @@ class search(object):
         self.log = logging.getLogger("errbot.plugins.%s" % self.__class__.__name__)
         self.host = host
     def exec(self):
-        print('host inventory in search {}'.format(self.host))
+        self.log.debug('host inventory in search {}'.format(self.host))
         es = Elasticsearch(['http://dev-test-elk.carpathia.com:9200'])
         our_q = {"from":0,"size":1,"query":{"bool":{"should":[{"match":{"host":self.host}}, {"match":{' \
                 '"source":"*catalina.out"}}, {"match":{"message":"ERROR*"}}]}}}
@@ -124,6 +124,14 @@ class ExecMsgParams(object):
 
 class GetInfo(BotPlugin):
     """Get info about environement"""
+    @re_botcmd(pattern=r"(.*)(damn|fuck|stupid)(.*)$", flags=re.IGNORECASE,matchall=True)
+    def be_nice(self, msg, match):
+        yield "Could you be more nice (((?"
+
+    @re_botcmd(pattern=r"(.*)(please)(.*)$", flags=re.IGNORECASE,matchall=True)
+    def gracefull(self, msg, match):
+        yield "It nice to hear"
+
     @re_botcmd(pattern=r"(.*)(show|start|stop|restart)(.*)$", flags=re.IGNORECASE)
     def parse_msg(self, msg, match):
         msg_properties = {
@@ -133,18 +141,20 @@ class GetInfo(BotPlugin):
             'host_groups': PORTAL_LIST+KARAF_LIST+OPENAM_LIST,
             'emotions': ['could','please','fuck','damn']
         }
-        # msg = 'could you show me portal on app01, please?'
         self.log.debug(msg)
+        m = str(msg)
+        m = m.replace(',', '').replace('?', '')
         # exclude = set(string.punctuation)
-        # msg = ''.join(ch for ch in msg if ch not in exclude)
-        m = re.split(' ',str(msg))
+        # m = ''.join(ch for ch in m if ch not in exclude)
+        m = re.split(' ',m)
+        print(m)
         # self.log.debug(m)
         host_inventory = {
-            'hostname':'none',
-            'service':'none',
-            'keyword':'none',
-            'command':'none',
-            'emotion':'none'
+            'hostname':None,
+            'service':None,
+            'keyword':None,
+            'command':None,
+            'emotion':None
         }
         for i in m:
             if i in msg_properties['commmand']:
@@ -165,21 +175,25 @@ class GetInfo(BotPlugin):
             if i in msg_properties['emotions']:
                 # self.log.debug(i)
                 host_inventory['emotion'] = i
-        self.log.debug(msg)
+        print(msg)
         print('host inventory in parser {}'.format(host_inventory))
         if host_inventory['keyword'] == 'error' and host_inventory['hostname'] in PORTAL_LIST:
             host = host_inventory['hostname']
-            print(host)
-            s = search(host)
-            s.exec()
+            self.log.debug('Executing search on host'.format(host))
+            # s = search(host)
+            # s.exec()
+            yield 'Executing search on host'.format(host)
+        if re.match(r"(version|vers)", host_inventory['keyword']):
+            msg_dict = {}
+            msg_dict.clear()
+            commands = ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed 's/.*=//'"]
+            host = host_inventory['hostname']
+            if host:
+                m = exec_remote(host, commands)
+                msg_dict[host] = m.exec()
+                for key, value in msg_dict.items():yield('NEW Portal on {} have version {}'.format(key, value))
 
-    @re_botcmd(pattern=r"(.*)(damn|fuck|stupid)(.*)$", flags=re.IGNORECASE,matchall=True)
-    def be_nice(self, msg, match):
-        yield "Could you be more nice (((?"
 
-    @re_botcmd(pattern=r"(.*)(please)(.*)$", flags=re.IGNORECASE,matchall=True)
-    def gracefull(self, msg, match):
-        yield "It nice to hear"
 
     @re_botcmd(pattern=r"^show(.*)portal(.*)(version|vers)(.*)$")
     def portal_versions(self, msg, match):
