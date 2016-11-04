@@ -67,11 +67,13 @@ class exec_remote_karaf(exec_remote):
         return ', '.join( repr(e) for e in l)
 
 class search(object):
-    def __init__(self,msg):
-        self.msg = msg
+    def __init__(self, host):
+        self.log = logging.getLogger("errbot.plugins.%s" % self.__class__.__name__)
+        self.host = host
     def exec(self):
+        print('host inventory in search {}'.format(self.host))
         es = Elasticsearch(['http://dev-test-elk.carpathia.com:9200'])
-        our_q = {"from":0,"size":1,"query":{"bool":{"should":[{"match":{"host":host_inventory['host']}}, {"match":{' \
+        our_q = {"from":0,"size":1,"query":{"bool":{"should":[{"match":{"host":self.host}}, {"match":{' \
                 '"source":"*catalina.out"}}, {"match":{"message":"ERROR*"}}]}}}
         res = es.search(index="logstash-*",body=our_q)
         print("Got %d Hits:" % res['hits']['total'])
@@ -122,7 +124,7 @@ class ExecMsgParams(object):
 
 class GetInfo(BotPlugin):
     """Get info about environement"""
-    @re_botcmd(pattern=r"(.*)(show|start|stop|restart)(.*)$", flags=re.IGNORECASE,matchall=True)
+    @re_botcmd(pattern=r"(.*)(show|start|stop|restart)(.*)$", flags=re.IGNORECASE)
     def parse_msg(self, msg, match):
         msg_properties = {
             'commmand': ['show', 'start', 'stop','restart'],
@@ -131,14 +133,14 @@ class GetInfo(BotPlugin):
             'host_groups': PORTAL_LIST+KARAF_LIST+OPENAM_LIST,
             'emotions': ['could','please','fuck','damn']
         }
-        msg = 'could you show me portal on app01, please?'
+        # msg = 'could you show me portal on app01, please?'
         self.log.debug(msg)
-        exclude = set(string.punctuation)
-        msg = ''.join(ch for ch in msg if ch not in exclude)
-        m = re.split(' ',msg)
+        # exclude = set(string.punctuation)
+        # msg = ''.join(ch for ch in msg if ch not in exclude)
+        m = re.split(' ',str(msg))
         # self.log.debug(m)
-        host_dict = {
-            'host':'none',
+        host_inventory = {
+            'hostname':'none',
             'service':'none',
             'keyword':'none',
             'command':'none',
@@ -146,27 +148,30 @@ class GetInfo(BotPlugin):
         }
         for i in m:
             if i in msg_properties['commmand']:
-                host_dict['command'] = i
+                host_inventory['command'] = i
         for i in m:
             if i in msg_properties['service']:
-                host_dict['service'] = i
+                host_inventory['service'] = i
         for i in m:
             if i in msg_properties['keywords']:
-                host_dict['keyword'] = i
+                host_inventory['keyword'] = i
         for i in m:
             hosts = msg_properties.get('host_groups')
             for idx, h in enumerate(hosts):
                 if i in h:
-                    host_dict['host'] = hosts[idx]
+                    host_inventory['hostname'] = hosts[idx]
                     break
         for i in m:
             if i in msg_properties['emotions']:
                 # self.log.debug(i)
-                host_dict['emotion'] = i
+                host_inventory['emotion'] = i
         self.log.debug(msg)
-        self.log.debug(host_dict)
-        if host_dict['keyword'] == 'error':
-            search.exec(msg)
+        print('host inventory in parser {}'.format(host_inventory))
+        if host_inventory['keyword'] == 'error' and host_inventory['hostname'] in PORTAL_LIST:
+            host = host_inventory['hostname']
+            print(host)
+            s = search(host)
+            s.exec()
 
     @re_botcmd(pattern=r"(.*)(damn|fuck|stupid)(.*)$", flags=re.IGNORECASE,matchall=True)
     def be_nice(self, msg, match):
