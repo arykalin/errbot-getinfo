@@ -143,9 +143,9 @@ class GetInfo(BotPlugin):
         }
         self.log.debug(msg)
         m = str(msg)
-        m = m.replace(',', '').replace('?', '')
-        # exclude = set(string.punctuation)
-        # m = ''.join(ch for ch in m if ch not in exclude)
+        # m = m.replace(',', '').replace('?', '')
+        exclude = set(string.punctuation)
+        m = ''.join(ch for ch in m if ch not in exclude)
         m = re.split(' ',m)
         print(m)
         # self.log.debug(m)
@@ -175,7 +175,7 @@ class GetInfo(BotPlugin):
             if i in msg_properties['emotions']:
                 # self.log.debug(i)
                 host_inventory['emotion'] = i
-        print(msg)
+        print(m)
         print('host inventory in parser {}'.format(host_inventory))
         if host_inventory['keyword'] == 'error' and host_inventory['hostname'] in PORTAL_LIST:
             host = host_inventory['hostname']
@@ -188,10 +188,17 @@ class GetInfo(BotPlugin):
             msg_dict.clear()
             commands = ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed 's/.*=//'"]
             host = host_inventory['hostname']
-            if host:
+            if host in PORTAL_LIST:
                 m = exec_remote(host, commands)
-                msg_dict[host] = m.exec()
-                for key, value in msg_dict.items():yield('NEW Portal on {} have version {}'.format(key, value))
+                reply = m.exec()
+                yield('NEW Portal on {} have version {}'.format(host, reply))
+            elif host == None:
+                for host in PORTAL_LIST:
+                    m = exec_remote(host, commands)
+                    reply = m.exec()
+                    yield('NEW Portal on {} have version {}'.format(host, reply))
+            else:
+                yield ('Sorry, I can not show portla version on {}'.format(host))
 
 
 
