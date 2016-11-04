@@ -1,6 +1,9 @@
 import paramiko
 import re
 import logging
+import string
+from datetime import datetime
+from elasticsearch import Elasticsearch
 
 from errbot import BotPlugin, botcmd, re_botcmd, arg_botcmd, webhook
 
@@ -9,6 +12,8 @@ from config import SSH_USER
 from config import KARAF_LIST
 from config import PORTAL_LIST
 from config import OPENAM_LIST
+
+host_inventory = {}
 
 class exec_remote(object):
     def __init__(self, hostname, commands):
@@ -61,6 +66,18 @@ class exec_remote_karaf(exec_remote):
         #return ', '.join( repr(e).strip() for e in l)
         return ', '.join( repr(e) for e in l)
 
+class search(object):
+    def __init__(self,msg):
+        self.msg = msg
+    def exec(self):
+        es = Elasticsearch(['http://dev-test-elk.carpathia.com:9200'])
+        our_q = {"from":0,"size":1,"query":{"bool":{"should":[{"match":{"host":host_inventory['host']}}, {"match":{' \
+                '"source":"*catalina.out"}}, {"match":{"message":"ERROR*"}}]}}}
+        res = es.search(index="logstash-*",body=our_q)
+        print("Got %d Hits:" % res['hits']['total'])
+        for hit in res['hits']['hits']:
+            print("%(@timestamp)s %(host)s: %(message)s" % hit["_source"])
+
 class ExecMsgParams(object):
     def __init__(self, host_list, commands, match, host_type='default'):
         self.log = logging.getLogger("errbot.plugins.%s" % self.__class__.__name__)
@@ -71,20 +88,20 @@ class ExecMsgParams(object):
     def exec(self):
         msg_dict = {}
         msg_dict.clear()
-        host_dict = {'hostname': 'None'}
+        # host_inventory = {'hostname': 'None'}
         host_frm_msg = re.match("(.*)(\s+on\s+)(.*)", self.match.group(4))
         if host_frm_msg:
             host_frm_msg = host_frm_msg.group(3)
             self.log.debug("pattern match working with {}".format(host_frm_msg))
             for idx, h in enumerate(self.host_list):
                 if host_frm_msg in h:
-                    self.log.debug("{} match {} in {} updating dict {} to {}".format(host_frm_msg,self.host_list[idx],self.host_list,
-                                                                      host_dict,h))
-                    host_dict['hostname'] = self.host_list[idx]
-                    self.log.debug("hostname in dict {} is {}".format(host_dict,host_dict['hostname']))
+                    self.log.debug("{} match {} in {} updating dict {} to {}".format(host_frm_msg, self.host_list[idx], self.host_list,
+                                                                                     host_inventory, h))
+                    host_inventory['hostname'] = self.host_list[idx]
+                    self.log.debug("hostname in dict {} is {}".format(host_inventory, host_inventory['hostname']))
                 else:
                     self.log.debug("host {} not found in {}".format(host_frm_msg,self.host_list))
-            host = host_dict['hostname']
+            host = host_inventory['hostname']
             if host == 'None':
                 msg_dict[host] = "host {} not found in hosts list {}".format(host_frm_msg, self.host_list)
             else:
@@ -105,6 +122,59 @@ class ExecMsgParams(object):
 
 class GetInfo(BotPlugin):
     """Get info about environement"""
+    @re_botcmd(pattern=r"(.*)(show|start|stop|restart)(.*)$", flags=re.IGNORECASE,matchall=True)
+    def parse_msg(self, msg, match):
+        msg_properties = {
+            'commmand': ['show', 'start', 'stop','restart'],
+            'service': ['portal','openam','karaf'],
+            'keywords': ['log','logs','db','database','features','version','error','exception'],
+            'host_groups': PORTAL_LIST+KARAF_LIST+OPENAM_LIST,
+            'emotions': ['could','please','fuck','damn']
+        }
+        msg = 'could you show me portal on app01, please?'
+        self.log.debug(msg)
+        exclude = set(string.punctuation)
+        msg = ''.join(ch for ch in msg if ch not in exclude)
+        m = re.split(' ',msg)
+        # self.log.debug(m)
+        host_dict = {
+            'host':'none',
+            'service':'none',
+            'keyword':'none',
+            'command':'none',
+            'emotion':'none'
+        }
+        for i in m:
+            if i in msg_properties['commmand']:
+                host_dict['command'] = i
+        for i in m:
+            if i in msg_properties['service']:
+                host_dict['service'] = i
+        for i in m:
+            if i in msg_properties['keywords']:
+                host_dict['keyword'] = i
+        for i in m:
+            hosts = msg_properties.get('host_groups')
+            for idx, h in enumerate(hosts):
+                if i in h:
+                    host_dict['host'] = hosts[idx]
+                    break
+        for i in m:
+            if i in msg_properties['emotions']:
+                # self.log.debug(i)
+                host_dict['emotion'] = i
+        self.log.debug(msg)
+        self.log.debug(host_dict)
+        if host_dict['keyword'] == 'error':
+            search.exec(msg)
+
+    @re_botcmd(pattern=r"(.*)(damn|fuck|stupid)(.*)$", flags=re.IGNORECASE,matchall=True)
+    def be_nice(self, msg, match):
+        yield "Could you be more nice (((?"
+
+    @re_botcmd(pattern=r"(.*)(please)(.*)$", flags=re.IGNORECASE,matchall=True)
+    def gracefull(self, msg, match):
+        yield "It nice to hear"
 
     @re_botcmd(pattern=r"^show(.*)portal(.*)(version|vers)(.*)$")
     def portal_versions(self, msg, match):
@@ -157,21 +227,13 @@ class GetInfo(BotPlugin):
         cmd = 'sudo systemctl {} {}'.format(e,s)
         commands.append(cmd)
         # host_frm_msg = re.match("(.*)(\s+on\s+)(.*)", match.group(4))
-        # print('will run {} on {}'.format(commands, host_frm_msg))
-        print(match.group(4))
+        # self.log.debug('will run {} on {}'.format(commands, host_frm_msg))
+        self.log.debug(match.group(4))
         if "on" in match.group(4):
            d = ExecMsgParams(host_list, commands, match).exec()
            for key, value in d.items():yield('Executed {} on {} with result {}'.format(commands, key, value))
         else:
             yield 'Run {} on {}??? Noooo. Testers will kill me.'.format(commands, sorted(host_list))
-
-    @re_botcmd(pattern=r"(.*)(damn|fuck|stupid)(.*)$", flags=re.IGNORECASE)
-    def be_nice(self, msg, match):
-        yield "Could you be more nice (((?"
-
-    @re_botcmd(pattern=r"(.*)(please)(.*)$", flags=re.IGNORECASE)
-    def gracefull(self, msg, match):
-        yield "Of course, here you are:"
 
     @re_botcmd(pattern=r"^show(.*)karaf(.*)(features|ftrs)(.*)$", flags=re.IGNORECASE)
     def karaf_features(self, msg, match):
@@ -189,7 +251,23 @@ class GetInfo(BotPlugin):
             for f in v:
                 yield(f)
 
+    @botcmd
+    def latest_erro(self, msg, args):
+        es = Elasticsearch(['http://dev-test-elk.carpathia.com:9200'])
 
+        #our_q = '{"query":{"bool":{"should":[{"match":{"host":"dev-test-app05*"}},{"match":{"source":"*catalina.out"}}]}}}'
+        #our_q = '{"query":{"bool":{"should":[{"match":{"host":"dev-test-app05*"}},{"match":{"source":"*catalina.out"}},
+        # {"match":{"message":"ERROR*"}}]}}}'
+        our_q = '{"from":0,"size":5,"query":{"bool":{"should":[{"match":{"host":"dev-test-app05*"}},{"match":{' \
+                '"source":"*catalina.out"}},{"match":{"message":"ERROR*"}}]}}}'
+
+        #res = es.search(index="logstash-2016.10.31",body=our_q)
+        res = es.search(index="logstash-*",body=our_q)
+
+        yield ("Got %d Hits:" % res['hits']['total'])
+
+        for hit in res['hits']['hits']:
+            yield ("%(@timestamp)s %(host)s: %(message)s" % hit["_source"])
 
     @botcmd
     def tail_catalina(self, msg, args):
