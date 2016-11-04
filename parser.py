@@ -1,5 +1,6 @@
 import re
 import json
+import string
 from config import KARAF_LIST
 from config import PORTAL_LIST
 from config import OPENAM_LIST
@@ -20,13 +21,15 @@ from config import OPENAM_LIST
 parse_msg = {
     'commmand': ['show', 'start', 'stop','restart'],
     'service': ['portal','openam','karaf'],
-    'keywords': ['log','logs','db','database','features','version'],
+    'keywords': ['log','logs','db','database','features','version','error','exception'],
     'host_groups': PORTAL_LIST+KARAF_LIST+OPENAM_LIST,
     'emotions': ['could','please','fuck','damn']
 }
-# print(parse_msg)
-msg = 'show me db on app01'
-m = re.split(' |, ',msg)
+msg = 'could you show me portal db on app01, please?'
+print(msg)
+exclude = set(string.punctuation)
+msg = ''.join(ch for ch in msg if ch not in exclude)
+m = re.split(' ',msg)
 # print(m)
 host_dict = {
     'host':'none',
@@ -37,26 +40,26 @@ host_dict = {
 }
 for i in m:
     if i in parse_msg['commmand']:
-        print(i)
+        # print(i)
         host_dict['command'] = i
 for i in m:
     if i in parse_msg['service']:
-        print(i)
+        # print(i)
         host_dict['service'] = i
 for i in m:
     if i in parse_msg['keywords']:
-        print(i)
+        # print(i)
         host_dict['keyword'] = i
 for i in m:
     hosts = parse_msg.get('host_groups')
     for idx, h in enumerate(hosts):
         if i in h:
-            print(hosts[idx])
+            # print(hosts[idx])
             host_dict['host'] = hosts[idx]
             break
 for i in m:
     if i in parse_msg['emotions']:
-        print(i)
+        # print(i)
         host_dict['emotion'] = i
 print(msg)
 print(host_dict)
