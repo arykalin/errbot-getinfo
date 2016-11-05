@@ -10,6 +10,8 @@ import jenkinsapi
 from jenkinsapi.jenkins import Jenkins
 
 from config import JENKINS_URL, JENKINS_USERNAME, JENKINS_PASSWORD
+from config import SSH_KEY
+from config import SSH_USER
 
 class Jenkinscarp(BotPlugin):
     """
@@ -254,7 +256,7 @@ class Jenkinscarp(BotPlugin):
         sock.connect((hostname, 22))
         t = paramiko.Transport(sock)
         t.start_client()
-        t.auth_publickey("ansible", paramiko.RSAKey.from_private_key_file("/etc/ansible/ansible.key"))
+        t.auth_publickey(SSH_USER, paramiko.RSAKey.from_private_key_file(SSH_KEY))
         chan = t.open_session()
         chan.exec_command(cmd)
         result = chan.recv(255).decode("utf-8")
