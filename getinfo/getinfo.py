@@ -3,7 +3,6 @@ import re
 import logging
 import string
 from datetime import datetime
-from elasticsearch import Elasticsearch
 
 from errbot import BotPlugin, botcmd, re_botcmd, arg_botcmd, webhook
 
@@ -65,20 +64,6 @@ class exec_remote_karaf(exec_remote):
 
         #return ', '.join( repr(e).strip() for e in l)
         return ', '.join( repr(e) for e in l)
-
-class search(object):
-    def __init__(self, host):
-        self.log = logging.getLogger("errbot.plugins.%s" % self.__class__.__name__)
-        self.host = host
-    def exec(self):
-        self.log.debug('host inventory in search {}'.format(self.host))
-        es = Elasticsearch(['http://dev-test-elk.carpathia.com:9200'])
-        our_q = {"from":0,"size":1,"query":{"bool":{"should":[{"match":{"host":self.host}}, {"match":{' \
-                '"source":"*catalina.out"}}, {"match":{"message":"ERROR*"}}]}}}
-        res = es.search(index="logstash-*",body=our_q)
-        print("Got %d Hits:" % res['hits']['total'])
-        for hit in res['hits']['hits']:
-            print("%(@timestamp)s %(host)s: %(message)s" % hit["_source"])
 
 class ExecMsgParams(object):
     def __init__(self, host_list, commands, match, host_type='default'):
@@ -199,23 +184,6 @@ class GetInfo(BotPlugin):
             for f in v:
                 yield(f)
 
-    @botcmd
-    def latest_erro(self, msg, args):
-        es = Elasticsearch(['http://dev-test-elk.carpathia.com:9200'])
-
-        #our_q = '{"query":{"bool":{"should":[{"match":{"host":"dev-test-app05*"}},{"match":{"source":"*catalina.out"}}]}}}'
-        #our_q = '{"query":{"bool":{"should":[{"match":{"host":"dev-test-app05*"}},{"match":{"source":"*catalina.out"}},
-        # {"match":{"message":"ERROR*"}}]}}}'
-        our_q = '{"from":0,"size":5,"query":{"bool":{"should":[{"match":{"host":"dev-test-app05*"}},{"match":{' \
-                '"source":"*catalina.out"}},{"match":{"message":"ERROR*"}}]}}}'
-
-        #res = es.search(index="logstash-2016.10.31",body=our_q)
-        res = es.search(index="logstash-*",body=our_q)
-
-        yield ("Got %d Hits:" % res['hits']['total'])
-
-        for hit in res['hits']['hits']:
-            yield ("%(@timestamp)s %(host)s: %(message)s" % hit["_source"])
 
     @botcmd
     def tail_catalina(self, msg, args):

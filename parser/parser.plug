@@ -1,7 +1,7 @@
 [Core]
 module = parser
 name = Parser
-DependsOn = GetInfo
+DependsOn = GetInfo, Search
 
 [Documentation]
 description = Parsing message and runnning commands

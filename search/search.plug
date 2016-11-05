@@ -1,0 +1,13 @@
+[Core]
+name = Search
+module = search
+
+[Documentation]
+description = Make various searches
+
+[Python]
+version = 3
+
+[Errbot]
+min = 4.3.3
+
