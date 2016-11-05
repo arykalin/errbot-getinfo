@@ -1,0 +1,13 @@
+[Core]
+module = parser
+name = Parser
+DependsOn = GetInfo
+
+[Documentation]
+description = Parsing message and runnning commands
+
+[Python]
+version = 3
+
+[Errbot]
+
