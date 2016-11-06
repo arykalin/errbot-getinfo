@@ -1,69 +1,17 @@
-import paramiko
 import re
 import logging
 import string
 from datetime import datetime
-
+from tools import exec_remote
+from tools import exec_remote_karaf
 from errbot import BotPlugin, botcmd, re_botcmd, arg_botcmd, webhook
 
-from config import SSH_KEY
-from config import SSH_USER
 from config import KARAF_LIST
 from config import PORTAL_LIST
 from config import OPENAM_LIST
 
 host_inventory = {}
 
-class exec_remote(object):
-    def __init__(self, hostname, commands):
-        self.hostname = hostname
-        self.commands = commands
-        self.log = logging.getLogger("errbot.plugins.%s" % self.__class__.__name__)
-
-    def exec(self):
-        k = paramiko.RSAKey.from_private_key_file(SSH_KEY)
-        c = paramiko.SSHClient()
-        c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.log.debug("connecting")
-        c.connect(self.hostname, username=SSH_USER, pkey=k)
-        self.log.debug("Commands are {}".format(self.commands))
-        l = []
-        for command in self.commands:
-            self.log.debug("Executing {}".format(command))
-            stdin, stdout, stderr = c.exec_command(command, get_pty=True)
-            for line in stdout:
-                line = line.rstrip()
-                l.append(line)
-
-        c.close()
-
-        #return ', '.join( repr(e).strip() for e in l)
-        return ', '.join( repr(e) for e in l)
-
-
-class exec_remote_karaf(exec_remote):
-    def exec(self):
-        user = 'karaf'
-        password = 'karaf'
-        port = 8101
-        c = paramiko.SSHClient()
-        c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.log.debug("connecting")
-        c.connect(self.hostname, username=user, password=password, port=port)
-        self.log.debug("Commands are {}".format(self.commands))
-        l = []
-        ansi_escape = re.compile(r'\x1b[^m]*m')
-        for command in self.commands:
-            self.log.debug("Executing {}".format(command))
-            stdin, stdout, stderr = c.exec_command(command, get_pty=True)
-            for line in stdout:
-                line = ansi_escape.sub('', line).rstrip()
-                l.append(line)
-
-        c.close()
-
-        #return ', '.join( repr(e).strip() for e in l)
-        return ', '.join( repr(e) for e in l)
 
 class ExecMsgParams(object):
     def __init__(self, host_list, commands, match, host_type='default'):

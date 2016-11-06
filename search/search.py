@@ -2,8 +2,12 @@ from errbot import BotPlugin, botcmd, arg_botcmd, webhook
 import logging
 from elasticsearch import Elasticsearch
 from config import ELASTIC_SERVER
+from tools import look_for_host_in_host_list
+from config import KARAF_LIST
+from config import PORTAL_LIST
+from config import OPENAM_LIST
 
-class search(object):
+class e_search(object):
     def __init__(self, host):
         self.log = logging.getLogger("errbot.plugins.%s" % self.__class__.__name__)
         self.host = host
@@ -17,11 +21,13 @@ class search(object):
         for hit in res['hits']['hits']:
             print("%(@timestamp)s %(host)s: %(message)s" % hit["_source"])
 
+# host = "app01"
+# hostname = look_for_host_in_host_list.search(host,PORTAL_LIST)
+# print(hostname)
 class Search(BotPlugin):
     """
     Make various searches
     """
-
     def activate(self):
         """
         Triggers on plugin activation
@@ -115,14 +121,14 @@ class Search(BotPlugin):
     def latest_erro(self, msg, args):
         es = Elasticsearch(ELASTIC_SERVER)
 
-        #our_q = '{"query":{"bool":{"should":[{"match":{"host":"dev-test-app05*"}},{"match":{"source":"*catalina.out"}}]}}}'
-        #our_q = '{"query":{"bool":{"should":[{"match":{"host":"dev-test-app05*"}},{"match":{"source":"*catalina.out"}},
+        #es_query = '{"query":{"bool":{"should":[{"match":{"host":"dev-test-app05*"}},{"match":{"source":"*catalina.out"}}]}}}'
+        #es_query = '{"query":{"bool":{"should":[{"match":{"host":"dev-test-app05*"}},{"match":{"source":"*catalina.out"}},
         # {"match":{"message":"ERROR*"}}]}}}'
-        our_q = '{"from":0,"size":5,"query":{"bool":{"should":[{"match":{"host":"dev-test-app05*"}},{"match":{' \
+        es_query = '{"from":0,"size":5,"query":{"bool":{"should":[{"match":{"host":"dev-test-app05*"}},{"match":{' \
                 '"source":"*catalina.out"}},{"match":{"message":"ERROR*"}}]}}}'
 
-        #res = es.search(index="logstash-2016.10.31",body=our_q)
-        res = es.search(index="logstash-*",body=our_q)
+        #res = es.search(index="logstash-2016.10.31",body=es_query)
+        res = es.search(index="logstash-*",body=es_query)
 
         yield ("Got %d Hits:" % res['hits']['total'])
 
