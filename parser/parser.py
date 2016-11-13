@@ -17,13 +17,17 @@ class MessageParser(BotPlugin):
         yield "It nice to hear"
 
 #To avoid unnecessary match check regex for command and keyword
+#TODO: Generare regex from msg_propeties dict -
+#TODO: r = re.compile(r'\b(?:%s)\b' % '|'.join(msg_properties['keywords']))
+#TODO: if re.match(r, 'logs'):print('match')
     @re_botcmd(pattern=r"(.*)(show|start|stop|restart)(.*)$", flags=re.IGNORECASE)
-    @re_botcmd(pattern=r"(.*)(log|logs|db|database|features|ftrs|version|error|exception)(.*)$",
+    @re_botcmd(pattern=r"(.*)(log|logs|db|database|features|ftrs|version|error|exception|portal|openam|karaf|ump)("
+                       r".*)$",
                flags=re.IGNORECASE)
     def parse_msg(self, msg, match):
         msg_properties = {
             'commmand': ['show', 'start', 'stop','restart'],
-            'service': ['portal','openam','karaf'],
+            'service': ['portal','openam','karaf','ump'],
             'keywords': ['log','logs','db','database','features','ftrs','version','error','exception'],
             'host_groups': PORTAL_LIST+KARAF_LIST+OPENAM_LIST,
             'emotions': ['could','please','fuck','damn']
@@ -75,3 +79,10 @@ class MessageParser(BotPlugin):
                 for h in sorted(KARAF_LIST):
                     args = h
                     yield from self.get_plugin('GetInfo').getinfo_karaf_features(msg, args)
+
+        if re.match("^start$|^stop$|^restart$", host_inventory['command']) is not None and host_inventory['service'] \
+                is not None and host_inventory['hostname'] is not None:
+            args = host_inventory['hostname']+' '+'--command '+host_inventory['command']+' '+'--service ' \
+                                                                                             ''+host_inventory['service']
+            print(args)
+            yield from self.get_plugin('GetInfo').getinfo_service_mngmt(msg, args)

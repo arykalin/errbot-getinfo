@@ -98,25 +98,19 @@ class GetInfo(BotPlugin):
         d = ExecMsgParams(host_list, commands, match, host_type).exec()
         for key, value in d.items():yield('UMP on {} use database {}'.format(key, value))
 
-    @re_botcmd(pattern=r"^(stop|start|restart)(.*)(openam|portal|ump)(.*)$", flags=re.IGNORECASE)
-    def service_restart(self, msg, match):
-        """Get info about karaf database"""
-        host_list = set().union(PORTAL_LIST, KARAF_LIST, OPENAM_LIST)
-        commands = []
-        e = match.group(1)
-        s = match.group(3)
-        cmd = 'sudo systemctl {} {}'.format(e,s)
-        commands.append(cmd)
-        # host_frm_msg = re.match("(.*)(\s+on\s+)(.*)", match.group(4))
-        # self.log.debug('will run {} on {}'.format(commands, host_frm_msg))
-        self.log.debug(match.group(4))
-        if "on" in match.group(4):
-           d = ExecMsgParams(host_list, commands, match).exec()
-           for key, value in d.items():yield('Executed {} on {} with result {}'.format(commands, key, value))
-        else:
-            yield 'Run {} on {}??? Noooo. Testers will kill me.'.format(commands, sorted(host_list))
+    @botcmd
+    @arg_botcmd('host', type=str)
+    @arg_botcmd('--service', dest='service', type=str)
+    @arg_botcmd('--command', dest='command', type=str, default="restart")
+    def getinfo_service_mngmt(self, mess, host=None, service=None, command=None):
+        """Manage services"""
+        commands = ['sudo systemctl {} {}'.format(command,service), 'sudo journalctl -n 6 -o cat|tail']
+        yield("Running {} on {}".format(commands,host))
+        m = exec_remote(host, commands).exec()
+        m = str(m).split(',')
+        for f in m:
+            yield(f)
 
-    # @re_botcmd(pattern=r"^show(.*)karaf(.*)(features|ftrs)(.*)$", flags=re.IGNORECASE)
     @botcmd
     @arg_botcmd('host', type=str)
     def getinfo_karaf_features(self, mess, host=None):
@@ -125,21 +119,8 @@ class GetInfo(BotPlugin):
                     "feature:info carpathia-sync-service |head -n 1",
                     "feature:info ump-commons-feature |head -n 1",
                     "feature:info ump-roster-feature |head -n 1",]
-        # d = ExecMsgParams(host_list, commands, match, host_type).exec()
         m = exec_remote_karaf(host, commands).exec()
         yield('Karaf on {} have features:'.format(host))
         m = str(m).split(',')
         for f in m:
             yield(f)
-
-        # for key, value in d.items():
-        #     yield('Karaf on {} have features:'.format(key))
-        #     v = str(value).split(',')
-        #     for f in v:
-        #         yield(f)
-
-
-    @botcmd
-    def hello_from_getingo(self, msg, args):
-        """Say hello to the world"""
-        return "Hi, I'm from getinfo, hello!"
