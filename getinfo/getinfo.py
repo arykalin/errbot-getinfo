@@ -100,11 +100,11 @@ class GetInfo(BotPlugin):
         commands = ["config:list|grep {}".format(property)]
         m = exec_remote_karaf(host, commands).exec()
         yield('Karaf properties on {}:'.format(host))
-        m = str(m).replace().split('\', \'')
-        for f in m:
-            yield(f)
+        # m = str(m).replace().split('\', \'')
+        # for f in m:
+            # yield(f)
         # yield('\n'.join(m))
-        # yield(m)
+        yield(m)
     @botcmd
     @arg_botcmd('host', type=str)
     def getinfo_karaf_features(self, mess, host=None):

@@ -66,25 +66,35 @@ class MessageParser(BotPlugin):
             if host is not None:
                 host_inventory['hostname'] = host
                 break
+            self.log.debug('host inventory in parser {}'.format(host_inventory['hostname']))
         #TODO: make possible to use several host using a list
-
-        self.log.debug('host inventory in parser {}'.format(host_inventory['hostname']))
 
         for i in m:
             if i in msg_properties['emotions']:
                 host_inventory['emotion'] = i
 
-                #TODO: rewrite statements to compounds https://docs.python.org/3/reference/compound_stmts.html
+        self.log.debug('Host inventory is: {}'.format(host_inventory))
+        #TODO: rewrite statements to compounds https://docs.python.org/3/reference/compound_stmts.html
+
         if host_inventory['service'] == 'karaf':
             if re.match("^features$|^ftrs$", host_inventory['keyword']) is not None:
                 if host_inventory['hostname'] in KARAF_LIST:
-                    print('Trying to run karaf features from getinfo')
+                    self.log.debug('Trying to run karaf features from getinfo')
                     args = host_inventory['hostname']
                     yield from self.get_plugin('GetInfo').getinfo_karaf_features(msg, args)
                 elif host_inventory['hostname'] == None:
                     for h in sorted(KARAF_LIST):
                         args = h
                         yield from self.get_plugin('GetInfo').getinfo_karaf_features(msg, args)
+            if re.match("^db$|^databases$", host_inventory['keyword']) is not None:
+                if host_inventory['hostname'] in KARAF_LIST:
+                    self.log.debug('Trying to run karaf prperties from getinfo')
+                    args = host_inventory['hostname']+' '+'--property com.qts.ump.dao.db.name'
+                    yield from self.get_plugin('GetInfo').getinfo_karaf_property(msg, args)
+                elif host_inventory['hostname'] == None:
+                    for h in sorted(KARAF_LIST):
+                        args = h
+                        yield from self.get_plugin('GetInfo').getinfo_karaf_property(msg, args)
 
         if re.match("^start$|^stop$|^restart$", host_inventory['command']) is not None \
                 and host_inventory['service'] is not None and host_inventory['hostname'] is not None:
