@@ -81,36 +81,30 @@ class GetInfo(BotPlugin):
         d = ExecMsgParams(host_list, commands, match).exec()
         for key, value in d.items():yield('OpenAM on {} have version {}'.format(key, value))
 
-    @re_botcmd(pattern=r"^show(.*)openam(.*)(database|db)(.*)$", flags=re.IGNORECASE)
-    def openam_databases(self, msg, match):
+    # @re_botcmd(pattern=r"^show(.*)openam(.*)(database|db)(.*)$", flags=re.IGNORECASE)
+    @botcmd
+    @arg_botcmd('host', type=str)
+    def openam_databases(self, msg, host=None):
         """Get info about openam database"""
         host_list = OPENAM_LIST
         commands = ["sudo grep jdbc:postgresql /home/openam/forgerock/openam-tomcat/conf/context.xml|tail -n 1|sed 's#.*postgresql://##'"]
         d = ExecMsgParams(host_list, commands, match).exec()
         for key, value in d.items():yield('OpenAM on {} use database {}'.format(key, value))
 
-    @re_botcmd(pattern=r"^show(.*)karaf(.*)(database|db)(.*)$", flags=re.IGNORECASE)
-    def karaf_database(self, msg, match):
-        """Get info about karaf database"""
-        host_list = KARAF_LIST
-        commands = ["config:list|grep com.qts.ump.dao.db.name"]
-        host_type = 'karaf'
-        d = ExecMsgParams(host_list, commands, match, host_type).exec()
-        for key, value in d.items():yield('UMP on {} use database {}'.format(key, value))
-
     @botcmd
     @arg_botcmd('host', type=str)
-    @arg_botcmd('--service', dest='service', type=str)
-    @arg_botcmd('--command', dest='command', type=str, default="restart")
-    def getinfo_service_mngmt(self, mess, host=None, service=None, command=None):
-        """Manage services"""
-        commands = ['sudo systemctl {} {}'.format(command,service), 'sudo journalctl -n 6 -o cat|tail']
-        yield("Running {} on {}".format(commands,host))
-        m = exec_remote(host, commands).exec()
-        m = str(m).split(',')
+    @arg_botcmd('--property', dest='property', type=str, default='com.qts.ump.dao.db.name')
+    # @re_botcmd(pattern=r"^show(.*)karaf(.*)(database|db)(.*)$", flags=re.IGNORECASE)
+    def getinfo_karaf_property(self, msg, host=None, property=None):
+        """Get info about karaf property"""
+        commands = ["config:list|grep {}".format(property)]
+        m = exec_remote_karaf(host, commands).exec()
+        yield('Karaf properties on {}:'.format(host))
+        m = str(m).replace().split('\', \'')
         for f in m:
             yield(f)
-
+        # yield('\n'.join(m))
+        # yield(m)
     @botcmd
     @arg_botcmd('host', type=str)
     def getinfo_karaf_features(self, mess, host=None):
@@ -124,3 +118,17 @@ class GetInfo(BotPlugin):
         m = str(m).split(',')
         for f in m:
             yield(f)
+
+    @botcmd
+    @arg_botcmd('host', type=str)
+    @arg_botcmd('--service', dest='service', type=str)
+    @arg_botcmd('--command', dest='command', type=str, default="restart")
+    def getinfo_service_mngmt(self, mess, host=None, service=None, command=None):
+        """Manage services"""
+        commands = ['sudo systemctl {} {}'.format(command,service), 'sudo journalctl -n 6 -o cat|tail|head -n 4']
+        yield("Running {} on {}".format(commands,host))
+        m = exec_remote(host, commands).exec()
+        m = str(m).split(',')
+        for f in m:
+            yield(f)
+

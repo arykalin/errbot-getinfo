@@ -49,6 +49,8 @@ class exec_remote(object):
         c.close()
 
         #return ', '.join( repr(e).strip() for e in l)
+        #TODO: rewrite to return norma text block
+        #TODO: maybe convert list to tuple?
         return ', '.join( repr(e) for e in l)
 
 
@@ -74,4 +76,5 @@ class exec_remote_karaf(exec_remote):
         c.close()
 
         #return ', '.join( repr(e).strip() for e in l)
+        #TODO: rewrite to return norma text block
         return ', '.join( repr(e) for e in l)

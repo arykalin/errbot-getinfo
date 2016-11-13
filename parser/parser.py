@@ -2,6 +2,7 @@ import re
 import json
 import string
 from errbot import BotPlugin, botcmd, re_botcmd, arg_botcmd, webhook
+from tools import look_for_host_in_host_list
 
 from config import KARAF_LIST
 from config import PORTAL_LIST
@@ -14,7 +15,7 @@ class MessageParser(BotPlugin):
 
     @re_botcmd(pattern=r"(.*)(please)(.*)$", flags=re.IGNORECASE,matchall=True)
     def gracefull(self, msg, match):
-        yield "It nice to hear"
+        yield "Sure)"
 
 #To avoid unnecessary match check regex for command and keyword
 #TODO: Generare regex from msg_propeties dict -
@@ -32,14 +33,11 @@ class MessageParser(BotPlugin):
             'host_groups': PORTAL_LIST+KARAF_LIST+OPENAM_LIST,
             'emotions': ['could','please','fuck','damn']
         }
-        self.log.debug(msg)
+        self.log.debug("Starting parse message {}".format(msg))
         m = str(msg)
         m = m.replace(',', '').replace('?', '')
-        # exclude = set(string.punctuation)
-        # m = ''.join(ch for ch in m if ch not in exclude)
         m = re.split(' ',m)
-        print(m)
-        # self.log.debug(m)
+        self.log.debug("Removing commas from message {}".format(m))
         host_inventory = {
             'hostname':None,
             'service':None,
@@ -56,33 +54,43 @@ class MessageParser(BotPlugin):
         for i in m:
             if i in msg_properties['keywords']:
                 host_inventory['keyword'] = i
-        for i in m:
-            hosts = msg_properties.get('host_groups')
-            for idx, h in enumerate(hosts):
-                if i in h:
-                    host_inventory['hostname'] = hosts[idx]
-                    break
+                break
+        #TODO: make keywords a list
+        #'keyword':[]
+        # host_inventory['keyword'].append(i)
+        #check and split:
+        #i = 'keyword'
+        #if i in msg_properties['a']:m=msg_properties['keywords'][msg_properties['keywords'].index(i)]
+        for h in m:
+            host = look_for_host_in_host_list(h, msg_properties.get('host_groups')).search()
+            if host is not None:
+                host_inventory['hostname'] = host
+                break
+        #TODO: make possible to use several host using a list
+
+        self.log.debug('host inventory in parser {}'.format(host_inventory['hostname']))
+
         for i in m:
             if i in msg_properties['emotions']:
-                # self.log.debug(i)
                 host_inventory['emotion'] = i
-        print(m)
-        print('host inventory in parser {}'.format(host_inventory))
 
-        if host_inventory['service'] == 'karaf' and (host_inventory['keyword'] == 'features'
-                                        or host_inventory['keyword'] == 'ftrs'):
-            if host_inventory['hostname'] in KARAF_LIST:
-                print('Trying to run karaf features from getinfo')
-                args = host_inventory['hostname']
-                yield from self.get_plugin('GetInfo').getinfo_karaf_features(msg, args)
-            elif host_inventory['hostname'] == None:
-                for h in sorted(KARAF_LIST):
-                    args = h
+                #TODO: rewrite statements to compounds https://docs.python.org/3/reference/compound_stmts.html
+        if host_inventory['service'] == 'karaf':
+            if re.match("^features$|^ftrs$", host_inventory['keyword']) is not None:
+                if host_inventory['hostname'] in KARAF_LIST:
+                    print('Trying to run karaf features from getinfo')
+                    args = host_inventory['hostname']
                     yield from self.get_plugin('GetInfo').getinfo_karaf_features(msg, args)
+                elif host_inventory['hostname'] == None:
+                    for h in sorted(KARAF_LIST):
+                        args = h
+                        yield from self.get_plugin('GetInfo').getinfo_karaf_features(msg, args)
 
-        if re.match("^start$|^stop$|^restart$", host_inventory['command']) is not None and host_inventory['service'] \
-                is not None and host_inventory['hostname'] is not None:
-            args = host_inventory['hostname']+' '+'--command '+host_inventory['command']+' '+'--service ' \
-                                                                                             ''+host_inventory['service']
-            print(args)
+        if re.match("^start$|^stop$|^restart$", host_inventory['command']) is not None \
+                and host_inventory['service'] is not None and host_inventory['hostname'] is not None:
+            args = host_inventory['hostname']+' '+'--command '+host_inventory['command']+' '+'--service '+host_inventory['service']
+            self.log.debug("Paasing arguemnts to getinfo_service_mngmt: {}".format(args))
             yield from self.get_plugin('GetInfo').getinfo_service_mngmt(msg, args)
+
+        if host_inventory['command'] == 'show' and re.match("^log$|^logs$", host_inventory['keyword']):
+            args = host_inventory['hostname']
