@@ -116,32 +116,28 @@ class GetInfo(BotPlugin):
         else:
             yield 'Run {} on {}??? Noooo. Testers will kill me.'.format(commands, sorted(host_list))
 
-    @re_botcmd(pattern=r"^show(.*)karaf(.*)(features|ftrs)(.*)$", flags=re.IGNORECASE)
-    def karaf_features(self, msg, match):
+    # @re_botcmd(pattern=r"^show(.*)karaf(.*)(features|ftrs)(.*)$", flags=re.IGNORECASE)
+    @botcmd
+    @arg_botcmd('host', type=str)
+    def getinfo_karaf_features(self, mess, host=None):
         """Get info about karaf features versions"""
-        host_list = KARAF_LIST
         commands = ["feature:info draas-proxy |head -n 1",
                     "feature:info carpathia-sync-service |head -n 1",
                     "feature:info ump-commons-feature |head -n 1",
                     "feature:info ump-roster-feature |head -n 1",]
-        host_type = 'karaf'
-        d = ExecMsgParams(host_list, commands, match, host_type).exec()
-        for key, value in d.items():
-            yield('Karaf on {} have features:'.format(key))
-            v = str(value).split(',')
-            for f in v:
-                yield(f)
+        # d = ExecMsgParams(host_list, commands, match, host_type).exec()
+        m = exec_remote_karaf(host, commands).exec()
+        yield('Karaf on {} have features:'.format(host))
+        m = str(m).split(',')
+        for f in m:
+            yield(f)
 
+        # for key, value in d.items():
+        #     yield('Karaf on {} have features:'.format(key))
+        #     v = str(value).split(',')
+        #     for f in v:
+        #         yield(f)
 
-    @botcmd
-    def tail_catalina(self, msg, args):
-        """Get info about portal versions"""
-        l = []
-        for host in PORTAL_LIST:
-            t = exec_remote(host, ["sudo tail -n 10 /home/tomcat/portal/logs/catalina.out"])
-            yield "Getting logs from {}".format(host)
-            l.append("tail catalina.out on %s : %s" % (host, t.exec()))
-        yield '\n'.join(l)
 
     @botcmd
     def hello_from_getingo(self, msg, args):

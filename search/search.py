@@ -34,6 +34,7 @@ class Search(BotPlugin):
     @arg_botcmd('--match', dest='match', type=str, default="ERROR")
     @arg_botcmd('--source', dest='source', type=str, default="catalina.out")
     def latest_erro(self, mess, host=None, size=None, match=None, source=None):
+        yield("Searching logs from host "+host+" from "+source+" for match "+match+" with size "+str(size))
         s = e_search(host,source,match,size)
         yield s.exec()
 
