@@ -12,7 +12,7 @@ class look_for_host_in_host_list(object):
         self.hosts_list = hosts_list
     def search(self):
         r = re.compile('.*({}).*'.format(self.host_regex))
-        self.log.debug("Looking for {} in {} with {}".format(self.host_regex,self.hosts_list,r))
+        self.log.debug("Looking for {} in {} with regex {}".format(self.host_regex,self.hosts_list,r))
         h = [m.group(0) for l in self.hosts_list for m in [r.search(l)] if m]
         #Making a set from list to remove dublicates
         hs = set(h)

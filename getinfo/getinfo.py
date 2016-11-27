@@ -57,28 +57,29 @@ class ExecMsgParams(object):
 
 class GetInfo(BotPlugin):
     """Get info about environement"""
-    @re_botcmd(pattern=r"^show(.*)portal(.*)(version|vers)(.*)$")
-    def getinfo_portal_versions(self, msg, match):
+    @botcmd
+    @arg_botcmd('host', type=str)
+    # @re_botcmd(pattern=r"^show(.*)portal(.*)(version|vers)(.*)$")
+    def getinfo_portal_versions(self, msg, host=None):
         """Get info about portal version"""
-        host_list = PORTAL_LIST
         commands = ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed 's/.*=//'"]
-        d = ExecMsgParams(host_list, commands, match).exec()
-        for key, value in d.items():yield('Portal on {} have version {}'.format(key, value))
+        m = exec_remote(host,commands).exec()
+        yield('Portal on {} have version {}'.format(host, m))
 
-    @re_botcmd(pattern=r"^show(.*)portal(.*)(database|db)(.*)$", flags=re.IGNORECASE)
-    def getinfo_portal_databases(self, msg, match):
+    @botcmd
+    @arg_botcmd('host', type=str)
+    # @re_botcmd(pattern=r"^show(.*)portal(.*)(database|db)(.*)$", flags=re.IGNORECASE)
+    def getinfo_portal_databases(self, msg, host=None):
         """Get info about portal database"""
-        host_list = PORTAL_LIST
         commands = ["sudo grep ^jdbc.mmdb.url /home/tomcat/portal/webapps/portal/WEB-INF/env.properties|sed 's#.*=.*jdbc:postgresql://##'"]
-        d = ExecMsgParams(host_list, commands, match).exec()
-        for key, value in d.items():yield('Portal on {} use database {}'.format(key, value))
+        m = exec_remote(host,commands).exec()
+        yield('Portal on {} use database {}'.format(host, m))
 
     @botcmd
     @arg_botcmd('host', type=str)
     # @re_botcmd(pattern=r"^show(.*)openam(.*)(version|vers)(.*)$", flags=re.IGNORECASE)
     def getinfo_openam_versions(self, msg, host=None):
         """Get info about openam version"""
-        host_list = OPENAM_LIST
         commands = ["sudo grep  urlArgs.*v ""/home/openam/forgerock/openam-tomcat/webapps/openam/XUI/index.html |sed -e 's/.*=//' -e 's/\".*//'"]
         m = exec_remote(host,commands).exec()
         yield('OpenAM on {} have version {}'.format(host, m))
@@ -88,7 +89,6 @@ class GetInfo(BotPlugin):
     #@re_botcmd(pattern=r"^show(.*)openam(.*)(database|db)(.*)$", flags=re.IGNORECASE)
     def getinfo_openam_databases(self, msg, host=None):
         """Get info about openam database"""
-        host_list = OPENAM_LIST
         commands = ["sudo grep jdbc:postgresql /home/openam/forgerock/openam-tomcat/conf/context.xml|tail -n 1|sed 's#.*postgresql://##'"]
         m = exec_remote(host,commands).exec()
         yield ('OpenAM on {} use database {}'.format(host, m))

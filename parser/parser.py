@@ -27,7 +27,7 @@ class MessageParser(BotPlugin):
 #TODO: r = re.compile(r'\b(?:%s)\b' % '|'.join(msg_properties['keywords']))
 #TODO: if re.match(r, 'logs'):print('match')
     @re_botcmd(pattern=r"(.*)(show|start|stop|restart)(.*)$", flags=re.IGNORECASE)
-    @re_botcmd(pattern=r"(.*)(log|logs|db|database|features|ftrs|version|error|exception|portal|openam|karaf|ump)("
+    @re_botcmd(pattern=r"(.*)(log|logs|db|database|features|ftrs|vers|version|error|exception|portal|openam|karaf|ump)("
                        r".*)$",
                flags=re.IGNORECASE)
     def parse_msg(self, msg, match):
@@ -124,6 +124,29 @@ class MessageParser(BotPlugin):
                     for h in sorted(OPENAM_LIST):
                         args = h
                         yield from self.get_plugin('GetInfo').getinfo_openam_versions(msg, args)
+
+        if host_inventory['service'] == 'portal':
+            if re.match("^db$|^databases$", host_inventory['keyword']) is not None:
+                if host_inventory['hostname'] in PORTAL_LIST:
+                    self.log.debug('Trying to run getinfo_portal_databases from getinfo')
+                    args = host_inventory['hostname']
+                    yield from self.get_plugin('GetInfo').getinfo_portal_databases(msg, args)
+                elif host_inventory['hostname'] == None:
+                    self.log.debug('Trying to run getinfo_portal_databases from getinfo on {}'.format(PORTAL_LIST))
+                    for h in sorted(PORTAL_LIST):
+                        args = h
+                        yield from self.get_plugin('GetInfo').getinfo_portal_databases(msg, args)
+
+            if re.match("^version$|^vers$", host_inventory['keyword']) is not None:
+                if host_inventory['hostname'] in PORTAL_LIST:
+                    self.log.debug('Trying to run getinfo_portal_versions from getinfo')
+                    args = host_inventory['hostname']
+                    yield from self.get_plugin('GetInfo').getinfo_portal_versions(msg, args)
+                elif host_inventory['hostname'] == None:
+                    self.log.debug('Trying to run getinfo_portal_versions from getinfo on {}'.format(PORTAL_LIST))
+                    for h in sorted(PORTAL_LIST):
+                        args = h
+                        yield from self.get_plugin('GetInfo').getinfo_portal_versions(msg, args)
 
         if re.match("^start$|^stop$|^restart$", host_inventory['command']) is not None \
                 and host_inventory['service'] is not None and host_inventory['hostname'] is not None:
