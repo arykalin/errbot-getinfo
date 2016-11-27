@@ -81,15 +81,15 @@ class GetInfo(BotPlugin):
         d = ExecMsgParams(host_list, commands, match).exec()
         for key, value in d.items():yield('OpenAM on {} have version {}'.format(key, value))
 
-    # @re_botcmd(pattern=r"^show(.*)openam(.*)(database|db)(.*)$", flags=re.IGNORECASE)
     @botcmd
     @arg_botcmd('host', type=str)
-    def openam_databases(self, msg, host=None):
+    #@re_botcmd(pattern=r"^show(.*)openam(.*)(database|db)(.*)$", flags=re.IGNORECASE)
+    def getinfo_openam_databases(self, msg, host=None):
         """Get info about openam database"""
         host_list = OPENAM_LIST
         commands = ["sudo grep jdbc:postgresql /home/openam/forgerock/openam-tomcat/conf/context.xml|tail -n 1|sed 's#.*postgresql://##'"]
-        d = ExecMsgParams(host_list, commands, match).exec()
-        for key, value in d.items():yield('OpenAM on {} use database {}'.format(key, value))
+        m = exec_remote(host,commands).exec()
+        yield ('OpenAM on {} use database {}'.format(host, m))
 
     @botcmd
     @arg_botcmd('host', type=str)
@@ -102,7 +102,7 @@ class GetInfo(BotPlugin):
         yield('Karaf properties on {}:'.format(host))
         # m = str(m).replace().split('\', \'')
         # for f in m:
-            # yield(f)
+        # yield(f)
         # yield('\n'.join(m))
         yield(m)
     @botcmd

@@ -7,6 +7,7 @@ from tools import look_for_host_in_host_list
 from config import KARAF_LIST
 from config import PORTAL_LIST
 from config import OPENAM_LIST
+from config import ALL_LIST
 
 class MessageParser(BotPlugin):
     @re_botcmd(pattern=r"(.*)(damn|fuck|stupid)(.*)$", flags=re.IGNORECASE,matchall=True)
@@ -16,6 +17,10 @@ class MessageParser(BotPlugin):
     @re_botcmd(pattern=r"(.*)(please)(.*)$", flags=re.IGNORECASE,matchall=True)
     def gracefull(self, msg, match):
         yield "Sure)"
+
+    @re_botcmd(pattern=r"(.*)$", prefixed=False, flags=re.IGNORECASE)
+    def send_all_messages_to_elasticksearch(self, msg, match):
+        yield "{} said: {}".format(msg.frm, msg)
 
 #To avoid unnecessary match check regex for command and keyword
 #TODO: Generare regex from msg_propeties dict -
@@ -30,14 +35,15 @@ class MessageParser(BotPlugin):
             'commmand': ['show', 'start', 'stop','restart'],
             'service': ['portal','openam','karaf','ump'],
             'keywords': ['log','logs','db','database','features','ftrs','version','error','exception'],
-            'host_groups': PORTAL_LIST+KARAF_LIST+OPENAM_LIST,
+            'host_groups': ALL_LIST,
             'emotions': ['could','please','fuck','damn']
         }
         self.log.debug("Starting parse message {}".format(msg))
+        self.log.debug("Removing commas and ? from message {}".format(msg))
         m = str(msg)
         m = m.replace(',', '').replace('?', '')
         m = re.split(' ',m)
-        self.log.debug("Removing commas from message {}".format(m))
+        self.log.debug("Processing message {}".format(m))
         host_inventory = {
             'hostname':None,
             'service':None,
@@ -96,11 +102,22 @@ class MessageParser(BotPlugin):
                         args = h
                         yield from self.get_plugin('GetInfo').getinfo_karaf_property(msg, args)
 
+        if host_inventory['service'] == 'openam':
+            if re.match("^db$|^databases$", host_inventory['keyword']) is not None:
+                if host_inventory['hostname'] in OPENAM_LIST:
+                    self.log.debug('Trying to run getinfo_openam_databases from getinfo')
+                    args = host_inventory['hostname']
+                    yield from self.get_plugin('GetInfo').getinfo_openam_databases(msg, args)
+                elif host_inventory['hostname'] == None:
+                    for h in sorted(OPENAM_LIST):
+                        args = h
+                        yield from self.get_plugin('GetInfo').getinfo_openam_databases(msg, args)
+
         if re.match("^start$|^stop$|^restart$", host_inventory['command']) is not None \
                 and host_inventory['service'] is not None and host_inventory['hostname'] is not None:
             args = host_inventory['hostname']+' '+'--command '+host_inventory['command']+' '+'--service '+host_inventory['service']
             self.log.debug("Paasing arguemnts to getinfo_service_mngmt: {}".format(args))
             yield from self.get_plugin('GetInfo').getinfo_service_mngmt(msg, args)
 
-        if host_inventory['command'] == 'show' and re.match("^log$|^logs$", host_inventory['keyword']):
-            args = host_inventory['hostname']
+        # if host_inventory['command'] == 'show' and re.match("^log$|^logs$", host_inventory['keyword']):
+        #     args = host_inventory['hostname']
