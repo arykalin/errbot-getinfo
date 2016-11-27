@@ -34,7 +34,7 @@ class MessageParser(BotPlugin):
         msg_properties = {
             'commmand': ['show', 'start', 'stop','restart'],
             'service': ['portal','openam','karaf','ump'],
-            'keywords': ['log','logs','db','database','features','ftrs','version','error','exception'],
+            'keywords': ['log','logs','db','database','features','ftrs','version','vers','error','exception'],
             'host_groups': ALL_LIST,
             'emotions': ['could','please','fuck','damn']
         }
@@ -109,9 +109,21 @@ class MessageParser(BotPlugin):
                     args = host_inventory['hostname']
                     yield from self.get_plugin('GetInfo').getinfo_openam_databases(msg, args)
                 elif host_inventory['hostname'] == None:
+                    self.log.debug('Trying to run getinfo_openam_databases from getinfo on {}'.format(OPENAM_LIST))
                     for h in sorted(OPENAM_LIST):
                         args = h
                         yield from self.get_plugin('GetInfo').getinfo_openam_databases(msg, args)
+
+            if re.match("^version$|^vers$", host_inventory['keyword']) is not None:
+                if host_inventory['hostname'] in OPENAM_LIST:
+                    self.log.debug('Trying to run getinfo_openam_versions from getinfo')
+                    args = host_inventory['hostname']
+                    yield from self.get_plugin('GetInfo').getinfo_openam_versions(msg, args)
+                elif host_inventory['hostname'] == None:
+                    self.log.debug('Trying to run getinfo_openam_versions from getinfo on {}'.format(OPENAM_LIST))
+                    for h in sorted(OPENAM_LIST):
+                        args = h
+                        yield from self.get_plugin('GetInfo').getinfo_openam_versions(msg, args)
 
         if re.match("^start$|^stop$|^restart$", host_inventory['command']) is not None \
                 and host_inventory['service'] is not None and host_inventory['hostname'] is not None:

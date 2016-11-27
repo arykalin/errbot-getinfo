@@ -22,14 +22,6 @@ class look_for_host_in_host_list(object):
                                                                      host=host,
                                                                      list=self.hosts_list))
             return host
-        # for idx, h in enumerate(self.hosts_list):
-        #     self.log.debug("Matching {h} and {r}".format(h=h,r=self.host_regex))
-        #     if self.host_regex in h:
-        #         self.log.debug("{host_regex} match {h} in {list}".format(host_regex=self.host_regex,
-        #                                                                  h=self.hosts_list[idx],
-        #                                                                  list=self.hosts_list))
-        #         host = h
-        #         return host
 
 class exec_remote(object):
     def __init__(self, hostname, commands):

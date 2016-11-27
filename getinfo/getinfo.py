@@ -58,7 +58,7 @@ class ExecMsgParams(object):
 class GetInfo(BotPlugin):
     """Get info about environement"""
     @re_botcmd(pattern=r"^show(.*)portal(.*)(version|vers)(.*)$")
-    def portal_versions(self, msg, match):
+    def getinfo_portal_versions(self, msg, match):
         """Get info about portal version"""
         host_list = PORTAL_LIST
         commands = ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed 's/.*=//'"]
@@ -66,20 +66,22 @@ class GetInfo(BotPlugin):
         for key, value in d.items():yield('Portal on {} have version {}'.format(key, value))
 
     @re_botcmd(pattern=r"^show(.*)portal(.*)(database|db)(.*)$", flags=re.IGNORECASE)
-    def portal_databases(self, msg, match):
+    def getinfo_portal_databases(self, msg, match):
         """Get info about portal database"""
         host_list = PORTAL_LIST
         commands = ["sudo grep ^jdbc.mmdb.url /home/tomcat/portal/webapps/portal/WEB-INF/env.properties|sed 's#.*=.*jdbc:postgresql://##'"]
         d = ExecMsgParams(host_list, commands, match).exec()
         for key, value in d.items():yield('Portal on {} use database {}'.format(key, value))
 
-    @re_botcmd(pattern=r"^show(.*)openam(.*)(version|vers)(.*)$", flags=re.IGNORECASE)
-    def openam_versions(self, msg, match):
+    @botcmd
+    @arg_botcmd('host', type=str)
+    # @re_botcmd(pattern=r"^show(.*)openam(.*)(version|vers)(.*)$", flags=re.IGNORECASE)
+    def getinfo_openam_versions(self, msg, host=None):
         """Get info about openam version"""
         host_list = OPENAM_LIST
         commands = ["sudo grep  urlArgs.*v ""/home/openam/forgerock/openam-tomcat/webapps/openam/XUI/index.html |sed -e 's/.*=//' -e 's/\".*//'"]
-        d = ExecMsgParams(host_list, commands, match).exec()
-        for key, value in d.items():yield('OpenAM on {} have version {}'.format(key, value))
+        m = exec_remote(host,commands).exec()
+        yield('OpenAM on {} have version {}'.format(host, m))
 
     @botcmd
     @arg_botcmd('host', type=str)
@@ -100,10 +102,6 @@ class GetInfo(BotPlugin):
         commands = ["config:list|grep {}".format(property)]
         m = exec_remote_karaf(host, commands).exec()
         yield('Karaf properties on {}:'.format(host))
-        # m = str(m).replace().split('\', \'')
-        # for f in m:
-        # yield(f)
-        # yield('\n'.join(m))
         yield(m)
     @botcmd
     @arg_botcmd('host', type=str)
