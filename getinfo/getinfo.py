@@ -1,59 +1,9 @@
-import re
-import logging
-import string
-from datetime import datetime
 from tools import exec_remote
 from tools import exec_remote_karaf
 from errbot import BotPlugin, botcmd, re_botcmd, arg_botcmd, webhook
 
-from config import KARAF_LIST
-from config import PORTAL_LIST
-from config import OPENAM_LIST
-
-host_inventory = {}
 
 
-class ExecMsgParams(object):
-    def __init__(self, host_list, commands, match, host_type='default'):
-        self.log = logging.getLogger("errbot.plugins.%s" % self.__class__.__name__)
-        self.match = match
-        self.host_list = sorted(host_list)
-        self.commands = commands
-        self.host_type = host_type
-    def exec(self):
-        msg_dict = {}
-        msg_dict.clear()
-        # host_inventory = {'hostname': 'None'}
-        host_frm_msg = re.match("(.*)(\s+on\s+)(.*)", self.match.group(4))
-        if host_frm_msg:
-            host_frm_msg = host_frm_msg.group(3)
-            self.log.debug("pattern match working with {}".format(host_frm_msg))
-            for idx, h in enumerate(self.host_list):
-                if host_frm_msg in h:
-                    self.log.debug("{} match {} in {} updating dict {} to {}".format(host_frm_msg, self.host_list[idx], self.host_list,
-                                                                                     host_inventory, h))
-                    host_inventory['hostname'] = self.host_list[idx]
-                    self.log.debug("hostname in dict {} is {}".format(host_inventory, host_inventory['hostname']))
-                else:
-                    self.log.debug("host {} not found in {}".format(host_frm_msg,self.host_list))
-            host = host_inventory['hostname']
-            if host == 'None':
-                msg_dict[host] = "host {} not found in hosts list {}".format(host_frm_msg, self.host_list)
-            else:
-                if self.host_type == 'karaf':
-                    m = exec_remote_karaf(host, self.commands)
-                else:
-                    m = exec_remote(host, self.commands)
-                msg_dict[host] = m.exec()
-        else:
-            for host in self.host_list:
-                self.log.debug('host is {}, going default, checking database used on {} :'.format(host_frm_msg,host))
-                if self.host_type == 'karaf':
-                    m = exec_remote_karaf(host, self.commands)
-                else:
-                    m = exec_remote(host, self.commands)
-                msg_dict[host] = m.exec()
-        return msg_dict
 
 class GetInfo(BotPlugin):
     """Get info about environement"""

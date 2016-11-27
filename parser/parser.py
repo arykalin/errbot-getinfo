@@ -1,6 +1,4 @@
 import re
-import json
-import string
 from errbot import BotPlugin, botcmd, re_botcmd, arg_botcmd, webhook
 from tools import look_for_host_in_host_list
 
@@ -33,8 +31,8 @@ class MessageParser(BotPlugin):
     def parse_msg(self, msg, match):
         msg_properties = {
             'commmand': ['show', 'start', 'stop','restart'],
-            'service': ['portal','openam','karaf','ump'],
-            'keywords': ['log','logs','db','database','features','ftrs','version','vers','error','exception'],
+            'service': ['portal','openam','karaf','ump','docker'],
+            'keywords': ['log','logs','db','database','features','ftrs','version','vers','error','exception','service'],
             'host_groups': ALL_LIST,
             'emotions': ['could','please','fuck','damn']
         }
@@ -149,7 +147,8 @@ class MessageParser(BotPlugin):
                         yield from self.get_plugin('GetInfo').getinfo_portal_versions(msg, args)
 
         if re.match("^start$|^stop$|^restart$", host_inventory['command']) is not None \
-                and host_inventory['service'] is not None and host_inventory['hostname'] is not None:
+                and host_inventory['service'] is not None and host_inventory['hostname'] is not None \
+                and host_inventory['keyword'] == 'service':
             args = host_inventory['hostname']+' '+'--command '+host_inventory['command']+' '+'--service '+host_inventory['service']
             self.log.debug("Paasing arguemnts to getinfo_service_mngmt: {}".format(args))
             yield from self.get_plugin('GetInfo').getinfo_service_mngmt(msg, args)
