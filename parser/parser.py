@@ -25,7 +25,8 @@ class MessageParser(BotPlugin):
 #TODO: r = re.compile(r'\b(?:%s)\b' % '|'.join(msg_properties['keywords']))
 #TODO: if re.match(r, 'logs'):print('match')
     @re_botcmd(pattern=r"(.*)(show|start|stop|restart)(.*)$", flags=re.IGNORECASE)
-    @re_botcmd(pattern=r"(.*)(log|logs|db|database|features|ftrs|vers|version|error|exception|portal|openam|karaf|ump)("
+    @re_botcmd(pattern=r"(.*)(log|logs|db|database|features|ftrs|vers|version|error|exception|portal|openam|karaf"
+                       r"|service|ump)("
                        r".*)$",
                flags=re.IGNORECASE)
     def parse_msg(self, msg, match):
