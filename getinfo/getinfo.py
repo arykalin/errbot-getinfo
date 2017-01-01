@@ -14,7 +14,7 @@ class GetInfo(BotPlugin):
         """Get info about portal version"""
         commands = ["sudo cat /home/tomcat/portal/webapps/portal/WEB-INF/release.properties|sed 's/.*=//'"]
         m = exec_remote(host,commands).exec()
-        yield('Portal on {} have version {}'.format(host, m))
+        yield('Portal version on {} : {}'.format(host, m))
 
     @botcmd
     @arg_botcmd('host', type=str)
@@ -27,12 +27,32 @@ class GetInfo(BotPlugin):
 
     @botcmd
     @arg_botcmd('host', type=str)
+    # @re_botcmd(pattern=r"^show(.*)portal(.*)(version|vers)(.*)$")
+    def getinfo_widgets_versions(self, msg, host=None):
+        """Get info about portal version"""
+        commands = ["sudo cat /home/tomcat/portal/webapps/widget-incident/WEB-INF/classes/release.properties|sed 's/.*=/widget-incident : /'",
+                    "sudo cat /home/tomcat/portal/webapps/widget-make-a-request/WEB-INF/classes/release.properties|sed 's/.*=/widget-make-a-request : /'",
+                    "sudo cat /home/tomcat/portal/webapps/widget-my-assigned/WEB-INF/classes/release.properties|sed 's/.*=/widget-my-assigned : /'"]
+        m = exec_remote(host,commands).exec()
+        yield('Widgets version on {} : {}'.format(host, m))
+
+    @botcmd
+    @arg_botcmd('host', type=str)
+    # @re_botcmd(pattern=r"^show(.*)portal(.*)(version|vers)(.*)$")
+    def getinfo_power_versions(self, msg, host=None):
+        """Get info about portal version"""
+        commands = ["sudo cat /home/tomcat/portal/webapps/power/WEB-INF/classes/release.properties|sed 's/.*=//'"]
+        m = exec_remote(host,commands).exec()
+        yield('Power version on {} : {}'.format(host, m))
+
+    @botcmd
+    @arg_botcmd('host', type=str)
     # @re_botcmd(pattern=r"^show(.*)openam(.*)(version|vers)(.*)$", flags=re.IGNORECASE)
     def getinfo_openam_versions(self, msg, host=None):
         """Get info about openam version"""
         commands = ["sudo grep  urlArgs.*v ""/home/openam/forgerock/openam-tomcat/webapps/openam/XUI/index.html |sed -e 's/.*=//' -e 's/\".*//'"]
         m = exec_remote(host,commands).exec()
-        yield('OpenAM on {} have version {}'.format(host, m))
+        yield('OpenAM version on {} : {}'.format(host, m))
 
     @botcmd
     @arg_botcmd('host', type=str)
@@ -60,7 +80,9 @@ class GetInfo(BotPlugin):
         commands = ["feature:info draas-proxy |head -n 1",
                     "feature:info carpathia-sync-service |head -n 1",
                     "feature:info ump-commons-feature |head -n 1",
-                    "feature:info ump-roster-feature |head -n 1",]
+                    "feature:info ump-roster-feature |head -n 1",
+                    "feature:info servicenow-requests |head -n 1",
+                    "feature:info qts-power-tool-feature |head -n 1"]
         m = exec_remote_karaf(host, commands).exec()
         yield('Karaf on {} have features:'.format(host))
         m = str(m).split(',')
