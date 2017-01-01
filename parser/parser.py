@@ -141,11 +141,15 @@ class MessageParser(BotPlugin):
                     self.log.debug('Trying to run getinfo_portal_versions from getinfo')
                     args = host_inventory['hostname']
                     yield from self.get_plugin('GetInfo').getinfo_portal_versions(msg, args)
+                    yield from self.get_plugin('GetInfo').getinfo_widgets_versions(msg, args)
+                    yield from self.get_plugin('GetInfo').getinfo_power_versions(msg, args)
                 elif host_inventory['hostname'] == None:
                     self.log.debug('Trying to run getinfo_portal_versions from getinfo on {}'.format(PORTAL_LIST))
                     for h in sorted(PORTAL_LIST):
                         args = h
                         yield from self.get_plugin('GetInfo').getinfo_portal_versions(msg, args)
+                        yield from self.get_plugin('GetInfo').getinfo_widgets_versions(msg, args)
+                        yield from self.get_plugin('GetInfo').getinfo_power_versions(msg, args)
 
         if re.match("^start$|^stop$|^restart$", host_inventory['command']) is not None \
                 and host_inventory['service'] is not None and host_inventory['hostname'] is not None \
