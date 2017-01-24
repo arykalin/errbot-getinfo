@@ -16,9 +16,9 @@ class MessageParser(BotPlugin):
     def gracefull(self, msg, match):
         yield "Sure)"
 
-    @re_botcmd(pattern=r"(.*)$", prefixed=False, flags=re.IGNORECASE)
-    def send_all_messages_to_elasticksearch(self, msg, match):
-        yield "{} said: {}".format(msg.frm, msg)
+    # @re_botcmd(pattern=r"(.*)$", prefixed=False, flags=re.IGNORECASE)
+    # def send_all_messages_to_elasticksearch(self, msg, match):
+    #     yield "{} said: {}".format(msg.frm, msg)
 
 #To avoid unnecessary match check regex for command and keyword
 #TODO: Generare regex from msg_propeties dict -
