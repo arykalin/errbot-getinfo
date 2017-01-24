@@ -40,4 +40,5 @@ ADD getinfo /plugins/getinfo
 ADD kk-jenkins /plugins/kk-jenkins
 ADD parser /plugins/parser
 ADD tools /plugins/tools
-CMD errbot -T
+ADD ansible.key /ansible.key
+CMD errbot

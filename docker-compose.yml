@@ -3,3 +3,4 @@ services:
   errbot:
     build:
       context: ./
+    command: errbot
